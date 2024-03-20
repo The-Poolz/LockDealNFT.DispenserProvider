@@ -108,7 +108,7 @@ describe("Dispenser Provider tests", function () {
         await lockDealNFT.connect(user).setApprovalForAll(owner.address, false)
     })
 
-    it("should create lock if approved for all", async () => {
+    it("should create lock if approved poolId", async () => {
         await lockDealNFT.connect(signer).approve(owner.address, poolId)
         const signatureData = [poolId, validTime, user.address, userData]
         const signature = await createSignature(signer, signatureData)
