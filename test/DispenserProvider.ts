@@ -98,6 +98,25 @@ describe("Dispenser Provider tests", function () {
         expect(await token.balanceOf(user.address)).to.equal(beforeBalance.add(amount))
     })
 
+    it("should create lock if approved for all", async () => {
+        await lockDealNFT.connect(user).setApprovalForAll(owner.address, true)
+        const signatureData = [poolId, validTime, user.address, userData]
+        const signature = await createSignature(signer, signatureData)
+        await expect(
+            dispenserProvider.connect(owner).createLock(poolId, validTime, user.address, usersData, signature)
+        ).to.not.reverted
+        await lockDealNFT.connect(user).setApprovalForAll(owner.address, false)
+    })
+
+    it("should create lock if approved for all", async () => {
+        await lockDealNFT.connect(signer).approve(owner.address, poolId)
+        const signatureData = [poolId, validTime, user.address, userData]
+        const signature = await createSignature(signer, signatureData)
+        await expect(
+            dispenserProvider.connect(owner).createLock(poolId, validTime, user.address, usersData, signature)
+        ).to.not.reverted
+    })
+
     it("should revert double creation", async () => {
         const signatureData = [poolId, validTime, user.address, userData]
         const signature = await createSignature(signer, signatureData)
