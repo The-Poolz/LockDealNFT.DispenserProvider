@@ -68,10 +68,11 @@ contract DispenserProvider is DispenserView {
         Builder[] calldata data,
         bytes memory signature
     ) external validProviderId(poolId) {
-        require(msg.sender == owner || lockDealNFT.getApproved(poolId) == msg.sender, "DispenserProvider: Not approved");
         require(
-             lockDealNFT.isApprovedForAll(owner, address(this)),
-            "DispenserProvider: Owner has not approved the DispenserProvider"
+            msg.sender == owner ||
+                lockDealNFT.getApproved(poolId) == msg.sender ||
+                lockDealNFT.isApprovedForAll(owner, msg.sender),
+            "DispenserProvider: Caller is not approved"
         );
         require(
             validUntil >= block.timestamp,

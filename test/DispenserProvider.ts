@@ -113,6 +113,14 @@ describe("Dispenser Provider tests", function () {
         ).to.be.revertedWith("DispenserProvider: Invalid signer address")
     })
 
+    it("should revert if sender is invalid", async () => {
+        const signatureData = [poolId, validTime, user.address, userData]
+        const signature = await createSignature(signer, signatureData)
+        await expect(
+            dispenserProvider.connect(owner).createLock(poolId, validTime, user.address, usersData, signature)
+        ).to.be.revertedWith("DispenserProvider: Caller is not approved")
+    })
+
     it("should revert invalid signer address", async () => {
         await expect(
             dispenserProvider.connect(owner).deposit(owner.address, constants.AddressZero, amount, creationSignature)
