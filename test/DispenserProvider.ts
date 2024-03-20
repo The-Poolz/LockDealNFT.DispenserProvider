@@ -1,18 +1,19 @@
 import { DispenserProvider } from "../typechain-types/contracts/DispenserProvider"
 import { LockDealNFT } from "../typechain-types/@poolzfinance/lockdeal-nft/contracts/LockDealNFT/LockDealNFT"
 import { DealProvider } from "../typechain-types/@poolzfinance/lockdeal-nft/contracts/SimpleProviders/DealProvider/DealProvider"
-import { MockVaultManager as VaultManager } from "../typechain-types/@poolzfinance/lockdeal-nft/contracts/mock/MockVaultManager"
+import { MockVaultManager as VaultManager } from "../typechain-types/contracts/mock/MockVaultManager"
 import { LockDealProvider } from "../typechain-types/@poolzfinance/lockdeal-nft/contracts/SimpleProviders/LockProvider/LockDealProvider"
 import { ERC20Token } from "../typechain-types/@poolzfinance/poolz-helper-v2/contracts/token/ERC20Token"
 import { TimedDealProvider } from "../typechain-types/@poolzfinance/lockdeal-nft/contracts/SimpleProviders/TimedDealProvider/TimedDealProvider"
 import { DispenserState } from "../typechain-types/contracts/DispenserProvider"
 import { time } from "@nomicfoundation/hardhat-network-helpers"
 import { expect } from "chai"
-import { Bytes, constants } from "ethers"
+import { createSignature } from "./helper"
+import { Bytes, constants, BigNumber } from "ethers"
 import { ethers } from "hardhat"
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers"
 
-describe("DispenserProvider", function () {
+describe("Dispenser Provider tests", function () {
     let owner: SignerWithAddress
     let user: SignerWithAddress
     let signer: SignerWithAddress
@@ -20,12 +21,14 @@ describe("DispenserProvider", function () {
     let token: ERC20Token
     let lockDealNFT: LockDealNFT
     let dealProvider: DealProvider
-    let userData: DispenserState.BuilderStruct[]
+    let userData: DispenserState.BuilderStruct
+    let usersData: DispenserState.BuilderStruct[]
     let lockProvider: LockDealProvider
     let timedProvider: TimedDealProvider
     let vaultManager: VaultManager
     let packedData: string
     let poolId: number
+    let validTime: BigNumber
     const builderType = ["uint256", "uint256", "address", "tuple(address,uint256[])[]"]
     const creationSignature: Bytes = ethers.utils.toUtf8Bytes("signature")
     const amount = ethers.utils.parseUnits("10", 18)
@@ -45,7 +48,6 @@ describe("DispenserProvider", function () {
         lockProvider = await LockDealProvider.deploy(lockDealNFT.address, dealProvider.address)
         const TimedDealProvider = await ethers.getContractFactory("TimedDealProvider")
         timedProvider = await TimedDealProvider.deploy(lockDealNFT.address, lockProvider.address)
-
         await lockDealNFT.setApprovedContract(dealProvider.address, true)
         await lockDealNFT.setApprovedContract(lockProvider.address, true)
         await lockDealNFT.setApprovedContract(timedProvider.address, true)
@@ -57,8 +59,9 @@ describe("DispenserProvider", function () {
         const ERC20Token = await ethers.getContractFactory("ERC20Token")
         token = await ERC20Token.deploy("Test", "TST")
         poolId = (await lockDealNFT.totalSupply()).toNumber()
+        await token.approve(vaultManager.address, amount)
         await dispenserProvider.connect(owner).deposit(signer.address, token.address, amount, creationSignature)
-        const validTime = ethers.BigNumber.from((await time.latest()) + ONE_DAY)
+        validTime = ethers.BigNumber.from((await time.latest()) + ONE_DAY)
         packedData = ethers.utils.defaultAbiCoder.encode(builderType, [
             poolId,
             validTime,
@@ -66,11 +69,6 @@ describe("DispenserProvider", function () {
             [[dealProvider.address, [amount]]],
         ])
     })
-
-    async function createSignature(signer: SignerWithAddress, data: string[]) {
-        const packedData = ethers.utils.defaultAbiCoder.encode(builderType, data)
-        return await signer.signMessage(ethers.utils.arrayify(packedData))
-    }
 
     it("should return name of contract", async () => {
         expect(await dispenserProvider.name()).to.equal("DispenserProvider")
@@ -80,13 +78,24 @@ describe("DispenserProvider", function () {
         expect(await dispenserProvider.leftAmount(poolId)).to.equal(amount)
     })
 
-    it("should transfer dealProvider nft", async () => {
-        const validTime = ethers.BigNumber.from((await time.latest()) + ONE_DAY)
-        userData = [{ simpleProvider: dealProvider.address, params: [amount] }]
-        const builderData = [[dealProvider.address, [amount]]]
-        const data = [poolId, validTime, user.address, builderData]
-        const signature = await createSignature(signer, data)
-        //await dispenserProvider.connect(user).createLock(poolId, validTime, user.address, userData, signature)
+    it("should deacrease leftAmount after lock", async () => {
+        userData = { simpleProvider: lockProvider.address, params: [amount.div(2), validTime] }
+        usersData = [{ simpleProvider: lockProvider.address, params: [amount.div(2), validTime] }]
+        const signatureData = [poolId, validTime, user.address, userData]
+        const signature = await createSignature(signer, signatureData)
+        await dispenserProvider.connect(user).createLock(poolId, validTime, user.address, usersData, signature)
+        expect(await dispenserProvider.leftAmount(poolId)).to.equal(amount.div(2))
+    })
+
+    it("should transfer if available", async () => {
+        userData = { simpleProvider: dealProvider.address, params: [amount] }
+        usersData = [{ simpleProvider: dealProvider.address, params: [amount] }]
+        const signatureData = [poolId, validTime, user.address, userData]
+        const signature = await createSignature(signer, signatureData)
+        const beforeBalance = await token.balanceOf(user.address)
+        await dispenserProvider.connect(user).createLock(poolId, validTime, user.address, usersData, signature)
+        // check if user has tokens after the transfer
+        expect(await token.balanceOf(user.address)).to.equal(beforeBalance.add(amount))
     })
 
     it("should revert invalid signer address", async () => {
