@@ -62,6 +62,8 @@ describe("Dispenser Provider tests", function () {
         await token.approve(vaultManager.address, amount)
         await dispenserProvider.connect(owner).deposit(signer.address, token.address, amount, creationSignature)
         validTime = ethers.BigNumber.from((await time.latest()) + ONE_DAY)
+        userData = { simpleProvider: lockProvider.address, params: [amount.div(2), validTime] }
+        usersData = [{ simpleProvider: lockProvider.address, params: [amount.div(2), validTime] }]
         packedData = ethers.utils.defaultAbiCoder.encode(builderType, [
             poolId,
             validTime,
@@ -79,8 +81,6 @@ describe("Dispenser Provider tests", function () {
     })
 
     it("should deacrease leftAmount after lock", async () => {
-        userData = { simpleProvider: lockProvider.address, params: [amount.div(2), validTime] }
-        usersData = [{ simpleProvider: lockProvider.address, params: [amount.div(2), validTime] }]
         const signatureData = [poolId, validTime, user.address, userData]
         const signature = await createSignature(signer, signatureData)
         await dispenserProvider.connect(user).createLock(poolId, validTime, user.address, usersData, signature)
@@ -96,6 +96,15 @@ describe("Dispenser Provider tests", function () {
         await dispenserProvider.connect(user).createLock(poolId, validTime, user.address, usersData, signature)
         // check if user has tokens after the transfer
         expect(await token.balanceOf(user.address)).to.equal(beforeBalance.add(amount))
+    })
+
+    it("should revert double creation", async () => {
+        const signatureData = [poolId, validTime, user.address, userData]
+        const signature = await createSignature(signer, signatureData)
+        await dispenserProvider.connect(user).createLock(poolId, validTime, user.address, usersData, signature)
+        await expect(
+            dispenserProvider.connect(user).createLock(poolId, validTime, user.address, usersData, signature)
+        ).to.be.revertedWith("DispenserProvider: Tokens already taken")
     })
 
     it("should revert invalid signer address", async () => {

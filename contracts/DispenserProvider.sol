@@ -77,6 +77,7 @@ contract DispenserProvider is DispenserView {
             validUntil >= block.timestamp,
             "DispenserProvider: Invalid validUntil"
         );
+        require(!isTaken[poolId][owner], "DispenserProvider: Tokens already taken");
         // Check the signature
         bytes memory dataToCheck = abi.encodePacked(
             poolId,
@@ -89,6 +90,7 @@ contract DispenserProvider is DispenserView {
             "DispenserProvider: Invalid signature"
         );
         _createSimpleNFTs(poolId, owner, data);
+        isTaken[poolId][owner] = true;
     }
 
     function _encodeBuilder(
