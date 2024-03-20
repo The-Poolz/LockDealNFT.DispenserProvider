@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
-import "hardhat/console.sol";
 import "./DispenserView.sol";
 
 contract DispenserProvider is DispenserView {
@@ -70,13 +69,16 @@ contract DispenserProvider is DispenserView {
         bytes memory signature
     ) external validProviderId(poolId) {
         require(
-            lockDealNFT.isApprovedForAll(owner, address(this)),
-            "DispenserProvider: Owner has not approved the DispenserProvider"
+            msg.sender == owner ||
+                lockDealNFT.getApproved(poolId) == msg.sender ||
+                lockDealNFT.isApprovedForAll(owner, msg.sender),
+            "DispenserProvider: Caller is not approved"
         );
         require(
             validUntil >= block.timestamp,
             "DispenserProvider: Invalid validUntil"
         );
+        require(!isTaken[poolId][owner], "DispenserProvider: Tokens already taken");
         // Check the signature
         bytes memory dataToCheck = abi.encodePacked(
             poolId,
@@ -89,13 +91,14 @@ contract DispenserProvider is DispenserView {
             "DispenserProvider: Invalid signature"
         );
         _createSimpleNFTs(poolId, owner, data);
+        isTaken[poolId][owner] = true;
     }
 
     function _encodeBuilder(
         Builder[] calldata builder
     ) internal pure returns (bytes memory data) {
         for (uint256 i = 0; i < builder.length; ++i) {
-            data = abi.encodePacked(data, abi.encode(builder));
+            data = abi.encodePacked(data, address(builder[i].simpleProvider), builder[i].params);
         }
     }
 
@@ -108,17 +111,18 @@ contract DispenserProvider is DispenserView {
             uint256 poolId = lockDealNFT.mintForProvider(owner, data[i].simpleProvider);
             data[i].simpleProvider.registerPool(poolId, data[i].params);
             lockDealNFT.cloneVaultId(poolId, tokenPoolId);
-            _withdrawIfAvaliable(data[i].simpleProvider, poolId, owner);
+            leftAmount[tokenPoolId] -= data[i].params[0];
+            _withdrawIfAvailable(data[i].simpleProvider, poolId, owner);
         }
     }
 
-    function _withdrawIfAvaliable(
+    function _withdrawIfAvailable(
         ISimpleProvider provider,
         uint256 poolId,
         address owner
     ) internal {
         if (provider.getWithdrawableAmount(poolId) > 0) {
-            lockDealNFT.safeTransferFrom(address(this), owner, poolId);
+            lockDealNFT.safeTransferFrom(owner, address(lockDealNFT), poolId);
         }
     }
 
