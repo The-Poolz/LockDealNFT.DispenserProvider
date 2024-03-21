@@ -26,12 +26,10 @@ describe("Dispenser Provider tests", function () {
     let lockProvider: LockDealProvider
     let timedProvider: TimedDealProvider
     let vaultManager: VaultManager
-    let packedData: string
     let poolId: number
     let addresses: string[]
     let params: [BigNumber]
     let validTime: BigNumber
-    const builderType = ["uint256", "uint256", "address", "tuple(address,uint256[])[]"]
     const creationSignature: Bytes = ethers.utils.toUtf8Bytes("signature")
     const amount = ethers.utils.parseUnits("10", 18)
     const ONE_DAY = 86400
@@ -68,12 +66,6 @@ describe("Dispenser Provider tests", function () {
         validTime = ethers.BigNumber.from((await time.latest()) + ONE_DAY)
         userData = { simpleProvider: lockProvider.address, params: [amount.div(2), validTime] }
         usersData = [{ simpleProvider: lockProvider.address, params: [amount.div(2), validTime] }]
-        packedData = ethers.utils.defaultAbiCoder.encode(builderType, [
-            poolId,
-            validTime,
-            user.address,
-            [[dealProvider.address, [amount]]],
-        ])
     })
 
     it("should return name of contract", async () => {
