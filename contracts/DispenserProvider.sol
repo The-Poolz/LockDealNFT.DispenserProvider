@@ -3,62 +3,14 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
-import "./DispenserView.sol";
+import "@poolzfinance/lockdeal-nft/contracts/SimpleProviders/DealProvider/DealProvider.sol";
+import "./DispenserState.sol";
 
-contract DispenserProvider is DispenserView {
+contract DispenserProvider is DealProvider, DispenserState {
     using ECDSA for bytes32;
 
-    constructor(ILockDealNFT _lockDealNFT) {
-        require(
-            address(_lockDealNFT) != address(0),
-            "DispenserProvider: Invalid lockDealNFT address"
-        );
+    constructor(ILockDealNFT _lockDealNFT) DealProvider(_lockDealNFT) {
         name = "DispenserProvider";
-        lockDealNFT = _lockDealNFT;
-    }
-
-    function deposit(
-        address signer,
-        IERC20 tokenAddress,
-        uint256 amount,
-        bytes calldata data
-    ) external returns (uint256 poolId) {
-        require(
-            signer != address(0),
-            "DispenserProvider: Invalid signer address"
-        );
-        require(
-            address(tokenAddress) != address(0),
-            "DispenserProvider: Invalid token address"
-        );
-        require(amount > 0, "DispenserProvider: Invalid amount");
-        poolId = lockDealNFT.safeMintAndTransfer(
-            signer,
-            address(tokenAddress),
-            msg.sender,
-            amount,
-            this,
-            data
-        );
-        uint256[] memory params = new uint256[](1);
-        params[0] = amount;
-        _registerPool(poolId, params);
-    }
-
-    function registerPool(
-        uint256 poolId,
-        uint256[] calldata params
-    )
-        external
-        onlyProvider
-        validProviderId(poolId)
-        validParamsLength(params.length, currentParamsTargetLength())
-    {
-        _registerPool(poolId, params);
-    }
-
-    function _registerPool(uint256 poolId, uint256[] memory params) internal {
-        leftAmount[poolId] = params[0];
     }
 
     function createLock(
@@ -111,7 +63,7 @@ contract DispenserProvider is DispenserView {
             uint256 poolId = lockDealNFT.mintForProvider(owner, data[i].simpleProvider);
             data[i].simpleProvider.registerPool(poolId, data[i].params);
             lockDealNFT.cloneVaultId(poolId, tokenPoolId);
-            leftAmount[tokenPoolId] -= data[i].params[0];
+            poolIdToAmount[tokenPoolId] -= data[i].params[0];
             _withdrawIfAvailable(data[i].simpleProvider, poolId, owner);
         }
     }
@@ -135,13 +87,5 @@ contract DispenserProvider is DispenserView {
         bytes32 hash = keccak256(data).toEthSignedMessageHash();
         address recoveredSigner = hash.recover(signature);
         success = recoveredSigner == signer;
-    }
-
-    function withdraw(uint256) external pure override returns (uint256, bool) {
-        require(false, "DispenserProvider: Not implemented yet");
-    }
-
-    function split(uint256, uint256, uint256) external pure override {
-        require(false, "DispenserProvider: Not implemented yet");
     }
 }

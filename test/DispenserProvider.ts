@@ -26,10 +26,10 @@ describe("Dispenser Provider tests", function () {
     let lockProvider: LockDealProvider
     let timedProvider: TimedDealProvider
     let vaultManager: VaultManager
-    let packedData: string
     let poolId: number
+    let addresses: string[]
+    let params: [BigNumber]
     let validTime: BigNumber
-    const builderType = ["uint256", "uint256", "address", "tuple(address,uint256[])[]"]
     const creationSignature: Bytes = ethers.utils.toUtf8Bytes("signature")
     const amount = ethers.utils.parseUnits("10", 18)
     const ONE_DAY = 86400
@@ -58,18 +58,14 @@ describe("Dispenser Provider tests", function () {
     beforeEach(async () => {
         const ERC20Token = await ethers.getContractFactory("ERC20Token")
         token = await ERC20Token.deploy("Test", "TST")
+        params = [amount]
+        addresses = [signer.address, token.address]
         poolId = (await lockDealNFT.totalSupply()).toNumber()
         await token.approve(vaultManager.address, amount)
-        await dispenserProvider.connect(owner).deposit(signer.address, token.address, amount, creationSignature)
+        await dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
         validTime = ethers.BigNumber.from((await time.latest()) + ONE_DAY)
         userData = { simpleProvider: lockProvider.address, params: [amount.div(2), validTime] }
         usersData = [{ simpleProvider: lockProvider.address, params: [amount.div(2), validTime] }]
-        packedData = ethers.utils.defaultAbiCoder.encode(builderType, [
-            poolId,
-            validTime,
-            user.address,
-            [[dealProvider.address, [amount]]],
-        ])
     })
 
     it("should return name of contract", async () => {
@@ -77,14 +73,14 @@ describe("Dispenser Provider tests", function () {
     })
 
     it("should increase leftAmount after creation", async () => {
-        expect(await dispenserProvider.leftAmount(poolId)).to.equal(amount)
+        expect(await dispenserProvider.poolIdToAmount(poolId)).to.equal(amount)
     })
 
     it("should deacrease leftAmount after lock", async () => {
         const signatureData = [poolId, validTime, user.address, userData]
         const signature = await createSignature(signer, signatureData)
         await dispenserProvider.connect(user).createLock(poolId, validTime, user.address, usersData, signature)
-        expect(await dispenserProvider.leftAmount(poolId)).to.equal(amount.div(2))
+        expect(await dispenserProvider.poolIdToAmount(poolId)).to.equal(amount.div(2))
     })
 
     it("should transfer if available", async () => {
@@ -127,9 +123,10 @@ describe("Dispenser Provider tests", function () {
     })
 
     it("should revert invalid signer address", async () => {
+        addresses = [constants.AddressZero, token.address]
         await expect(
-            dispenserProvider.connect(owner).deposit(constants.AddressZero, token.address, amount, creationSignature)
-        ).to.be.revertedWith("DispenserProvider: Invalid signer address")
+            dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
+        ).to.be.revertedWith("Zero Address is not allowed")
     })
 
     it("should revert if sender is invalid", async () => {
@@ -141,34 +138,16 @@ describe("Dispenser Provider tests", function () {
     })
 
     it("should revert invalid signer address", async () => {
+        addresses = [signer.address, constants.AddressZero]
         await expect(
-            dispenserProvider.connect(owner).deposit(owner.address, constants.AddressZero, amount, creationSignature)
-        ).to.be.revertedWith("DispenserProvider: Invalid token address")
+            dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
+        ).to.be.revertedWith("Zero Address is not allowed")
     })
 
     it("should revert invalid signer address", async () => {
+        params = [BigNumber.from(0)]
         await expect(
-            dispenserProvider.connect(owner).deposit(owner.address, token.address, 0, creationSignature)
-        ).to.be.revertedWith("DispenserProvider: Invalid amount")
-    })
-
-    it("should revert split", async () => {
-        const halfRatio = ethers.utils.parseUnits("1", 21).div(2)
-        const packedData = ethers.utils.defaultAbiCoder.encode(["uint256", "address"], [halfRatio, owner.address])
-        await expect(
-            lockDealNFT
-                .connect(signer)
-                [
-                    "safeTransferFrom(address,address,uint256,bytes)"
-                ](signer.address, lockDealNFT.address, poolId, packedData)
-        ).to.be.revertedWith("DispenserProvider: Not implemented yet")
-    })
-
-    it("should revert withdraw", async () => {
-        await expect(
-            lockDealNFT
-                .connect(signer)
-                ["safeTransferFrom(address,address,uint256)"](signer.address, lockDealNFT.address, poolId)
-        ).to.be.revertedWith("DispenserProvider: Not implemented yet")
+            dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
+        ).to.be.revertedWith("amount must be greater than 0")
     })
 })
