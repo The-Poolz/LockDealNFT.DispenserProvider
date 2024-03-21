@@ -13,34 +13,6 @@ contract DispenserProvider is DealProvider, DispenserState {
         name = "DispenserProvider";
     }
 
-    /**
-     * @dev Creates a new pool with the specified parameters.
-     * @param addresses[0] The address of the signer.
-     * @param addresses[1] The address of the token associated with the pool.
-     * @param params An array of pool parameters [poolIdToAmount].
-     * @param signature The signature of the pool owner.
-     * @return poolId The ID of the newly created pool.
-     */
-    function createNewPool(
-        address[] calldata addresses,
-        uint256[] calldata params,
-        bytes calldata signature
-    )
-        external
-        virtual
-        override
-        firewallProtected
-        validAddressesLength(addresses.length, 2)
-        validParamsLength(params.length, currentParamsTargetLength())
-        returns (uint256 poolId)
-    {
-        require(addresses[0] != address(0), "DispenserProvider: Invalid signer address");
-        require(address(addresses[1]) != address(0), "DispenserProvider: Invalid token address");
-        require(params[0] > 0, "DispenserProvider: Invalid amount");
-        poolId = lockDealNFT.safeMintAndTransfer(addresses[0], address(addresses[1]), msg.sender, params[0], this,signature);
-        _registerPool(poolId, params);
-    }
-
     function createLock(
         uint256 poolId,
         uint256 validUntil,

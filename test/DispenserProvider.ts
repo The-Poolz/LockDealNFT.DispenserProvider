@@ -126,7 +126,7 @@ describe("Dispenser Provider tests", function () {
         addresses = [constants.AddressZero, token.address]
         await expect(
             dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
-        ).to.be.revertedWith("DispenserProvider: Invalid signer address")
+        ).to.be.revertedWith("Zero Address is not allowed")
     })
 
     it("should revert if sender is invalid", async () => {
@@ -141,13 +141,13 @@ describe("Dispenser Provider tests", function () {
         addresses = [signer.address, constants.AddressZero]
         await expect(
             dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
-        ).to.be.revertedWith("DispenserProvider: Invalid token address")
+        ).to.be.revertedWith("Zero Address is not allowed")
     })
 
     it("should revert invalid signer address", async () => {
         params = [BigNumber.from(0)]
         await expect(
             dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
-        ).to.be.revertedWith("DispenserProvider: Invalid amount")
+        ).to.be.revertedWith("amount must be greater than 0")
     })
 })
