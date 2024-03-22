@@ -13,33 +13,38 @@ abstract contract DispenserInternal is IDispenserProvider, DealProvider, Dispens
         Builder[] calldata builder
     ) internal pure returns (bytes memory data) {
         for (uint256 i = 0; i < builder.length; ++i) {
-            data = abi.encodePacked(data, address(builder[i].simpleProvider), builder[i].params);
+            data = _encodeBuilder(builder[i], data);
         }
     }
 
-    function _createSimpleNFTs(
+    function _encodeBuilder(Builder calldata builder, bytes memory data) internal pure returns(bytes memory) {
+        return abi.encodePacked(data, address(builder.simpleProvider), builder.params);
+    }
+
+    function _handleSimpleNFTs(
         uint256 tokenPoolId,
         address owner,
         Builder[] calldata data
     ) internal returns(uint256 amountTaken) {
         for (uint256 i = 0; i < data.length; ++i) {
-            _createSimpleNFT(tokenPoolId, owner, data[i]);
+            require(data[i].params[0] > 0, "DispenserProvider: Amount must be greater than 0");
+            uint256 poolId = _handleSimpleNFT(tokenPoolId, owner, data[i]);
+            _withdrawIfAvailable(data[i].simpleProvider, poolId, owner);
             amountTaken += data[i].params[0];
         }
-        require(amountTaken <= poolIdToAmount[tokenPoolId], "Dispenser: Not enough tokens in the pool");
+        require(amountTaken <= poolIdToAmount[tokenPoolId], "DispenserProvider: Not enough tokens in the pool");
         poolIdToAmount[tokenPoolId] -= amountTaken;
         isTaken[tokenPoolId][owner] = true;
     }
 
-    function _createSimpleNFT(
+    function _handleSimpleNFT(
         uint256 tokenPoolId,
         address owner,
         Builder calldata data
-    ) internal {
-        uint256 poolId = lockDealNFT.mintForProvider(owner, data.simpleProvider);
+    ) internal returns(uint256 poolId) {
+        poolId = lockDealNFT.mintForProvider(owner, data.simpleProvider);
         data.simpleProvider.registerPool(poolId, data.params);
         lockDealNFT.cloneVaultId(poolId, tokenPoolId);
-        _withdrawIfAvailable(data.simpleProvider, poolId, owner);
     }
 
     function _withdrawIfAvailable(

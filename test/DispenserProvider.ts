@@ -166,6 +166,16 @@ describe("Dispenser Provider tests", function () {
         const signature = await createSignature(signer, signatureData)
         await expect(
             dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
-        ).to.be.revertedWith("Dispenser: Not enough tokens in the pool")
+        ).to.be.revertedWith("DispenserProvider: Not enough tokens in the pool")
+    })
+
+    it("should revert zero params amount", async () => {
+        const invalidUserData = { simpleProvider: lockProvider.address, params: [0, validTime] }
+        usersData = [userData, invalidUserData]
+        const signatureData = [poolId, validTime, user.address, userData, invalidUserData]
+        const signature = await createSignature(signer, signatureData)
+        await expect(
+            dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
+        ).to.be.revertedWith("DispenserProvider: Amount must be greater than 0")
     })
 })

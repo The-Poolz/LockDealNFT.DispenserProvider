@@ -22,7 +22,7 @@ contract DispenserProvider is DispenserModifiers {
         isAlreadyTaken(poolId, owner)
     {
         _isValidSignature(poolId, validUntil, owner, data, signature);
-        _createSimpleNFTs(poolId, owner, data);
+        _handleSimpleNFTs(poolId, owner, data);
     }
 
     function supportsInterface(
