@@ -21,15 +21,25 @@ abstract contract DispenserInternal is IDispenserProvider, DealProvider, Dispens
         uint256 tokenPoolId,
         address owner,
         Builder[] calldata data
-    ) internal {
+    ) internal returns(uint256 amountTaken) {
         for (uint256 i = 0; i < data.length; ++i) {
-            uint256 poolId = lockDealNFT.mintForProvider(owner, data[i].simpleProvider);
-            data[i].simpleProvider.registerPool(poolId, data[i].params);
-            lockDealNFT.cloneVaultId(poolId, tokenPoolId);
-            poolIdToAmount[tokenPoolId] -= data[i].params[0];
-            _withdrawIfAvailable(data[i].simpleProvider, poolId, owner);
+            _createSimpleNFT(tokenPoolId, owner, data[i]);
+            amountTaken += data[i].params[0];
         }
+        require(amountTaken <= poolIdToAmount[tokenPoolId], "Dispenser: Not enough tokens in the pool");
+        poolIdToAmount[tokenPoolId] -= amountTaken;
         isTaken[tokenPoolId][owner] = true;
+    }
+
+    function _createSimpleNFT(
+        uint256 tokenPoolId,
+        address owner,
+        Builder calldata data
+    ) internal {
+        uint256 poolId = lockDealNFT.mintForProvider(owner, data.simpleProvider);
+        data.simpleProvider.registerPool(poolId, data.params);
+        lockDealNFT.cloneVaultId(poolId, tokenPoolId);
+        _withdrawIfAvailable(data.simpleProvider, poolId, owner);
     }
 
     function _withdrawIfAvailable(

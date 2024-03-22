@@ -65,7 +65,7 @@ describe("Dispenser Provider tests", function () {
         await dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
         validTime = ethers.BigNumber.from((await time.latest()) + ONE_DAY)
         userData = { simpleProvider: lockProvider.address, params: [amount.div(2), validTime] }
-        usersData = [{ simpleProvider: lockProvider.address, params: [amount.div(2), validTime] }]
+        usersData = [userData]
     })
 
     it("should return name of contract", async () => {
@@ -85,7 +85,7 @@ describe("Dispenser Provider tests", function () {
 
     it("should transfer if available", async () => {
         userData = { simpleProvider: dealProvider.address, params: [amount] }
-        usersData = [{ simpleProvider: dealProvider.address, params: [amount] }]
+        usersData = [userData]
         const signatureData = [poolId, validTime, user.address, userData]
         const signature = await createSignature(signer, signatureData)
         const beforeBalance = await token.balanceOf(user.address)
@@ -157,5 +157,15 @@ describe("Dispenser Provider tests", function () {
 
     it("should support IDispenserProvider interface", async () => {
         expect(await dispenserProvider.supportsInterface('0xda28ff53')).to.equal(true)
+    })
+
+    it("should revert if params amount greater than leftAmount", async () => {
+        userData = { simpleProvider: lockProvider.address, params: [amount, validTime] }
+        usersData = [userData, userData]
+        const signatureData = [poolId, validTime, user.address, userData, userData]
+        const signature = await createSignature(signer, signatureData)
+        await expect(
+            dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
+        ).to.be.revertedWith("Dispenser: Not enough tokens in the pool")
     })
 })
