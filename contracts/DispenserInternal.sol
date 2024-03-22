@@ -28,6 +28,7 @@ abstract contract DispenserInternal is DealProvider, DispenserState {
             poolIdToAmount[tokenPoolId] -= data[i].params[0];
             _withdrawIfAvailable(data[i].simpleProvider, poolId, owner);
         }
+        isTaken[tokenPoolId][owner] = true;
     }
 
     function _withdrawIfAvailable(
@@ -43,11 +44,8 @@ abstract contract DispenserInternal is DealProvider, DispenserState {
     function _checkData(
         uint256 poolId,
         bytes memory data,
-        bytes memory signature
-    ) internal view returns (bool success) {
-        address signer = lockDealNFT.getData(poolId).owner;
-        bytes32 hash = keccak256(data).toEthSignedMessageHash();
-        address recoveredSigner = hash.recover(signature);
-        success = recoveredSigner == signer;
+        bytes calldata signature
+    ) internal view returns (bool) {
+        return keccak256(data).toEthSignedMessageHash().recover(signature) == lockDealNFT.getData(poolId).owner;
     }
 }

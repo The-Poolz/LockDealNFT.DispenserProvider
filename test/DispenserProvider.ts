@@ -137,14 +137,14 @@ describe("Dispenser Provider tests", function () {
         ).to.be.revertedWith("DispenserProvider: Caller is not approved")
     })
 
-    it("should revert invalid signer address", async () => {
+    it("should revert zero token address", async () => {
         addresses = [signer.address, constants.AddressZero]
         await expect(
             dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
         ).to.be.revertedWith("Zero Address is not allowed")
     })
 
-    it("should revert invalid signer address", async () => {
+    it("should revert invalid amount", async () => {
         params = [BigNumber.from(0)]
         await expect(
             dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
