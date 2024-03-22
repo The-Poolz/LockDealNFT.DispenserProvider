@@ -4,9 +4,10 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@poolzfinance/lockdeal-nft/contracts/SimpleProviders/DealProvider/DealProvider.sol";
+import "./interfaces/IDispenserProvider.sol";
 import "./DispenserState.sol";
 
-contract DispenserProvider is DealProvider, DispenserState {
+contract DispenserProvider is IDispenserProvider, DealProvider, DispenserState {
     using ECDSA for bytes32;
 
     event TokensDispensed(uint256 poolId, address user, bool isTaken, uint256 leftAmount);
@@ -15,12 +16,12 @@ contract DispenserProvider is DealProvider, DispenserState {
         name = "DispenserProvider";
     }
 
-    function createLock(
+    function dispenseLock(
         uint256 poolId,
         uint256 validUntil,
         address owner,
         Builder[] calldata data,
-        bytes memory signature
+        bytes calldata signature
     ) external validProviderId(poolId) {
         require(
             msg.sender == owner ||
@@ -90,5 +91,11 @@ contract DispenserProvider is DealProvider, DispenserState {
         bytes32 hash = keccak256(data).toEthSignedMessageHash();
         address recoveredSigner = hash.recover(signature);
         success = recoveredSigner == signer;
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override returns (bool) {
+        return interfaceId == type(IDispenserProvider).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
 }
