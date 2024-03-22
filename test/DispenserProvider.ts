@@ -79,7 +79,7 @@ describe("Dispenser Provider tests", function () {
     it("should deacrease leftAmount after lock", async () => {
         const signatureData = [poolId, validTime, user.address, userData]
         const signature = await createSignature(signer, signatureData)
-        await dispenserProvider.connect(user).createLock(poolId, validTime, user.address, usersData, signature)
+        await dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
         expect(await dispenserProvider.poolIdToAmount(poolId)).to.equal(amount.div(2))
     })
 
@@ -89,7 +89,7 @@ describe("Dispenser Provider tests", function () {
         const signatureData = [poolId, validTime, user.address, userData]
         const signature = await createSignature(signer, signatureData)
         const beforeBalance = await token.balanceOf(user.address)
-        await dispenserProvider.connect(user).createLock(poolId, validTime, user.address, usersData, signature)
+        await dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
         // check if user has tokens after the transfer
         expect(await token.balanceOf(user.address)).to.equal(beforeBalance.add(amount))
     })
@@ -99,7 +99,7 @@ describe("Dispenser Provider tests", function () {
         const signatureData = [poolId, validTime, user.address, userData]
         const signature = await createSignature(signer, signatureData)
         await expect(
-            dispenserProvider.connect(owner).createLock(poolId, validTime, user.address, usersData, signature)
+            dispenserProvider.connect(owner).dispenseLock(poolId, validTime, user.address, usersData, signature)
         ).to.not.reverted
         await lockDealNFT.connect(user).setApprovalForAll(owner.address, false)
     })
@@ -109,16 +109,16 @@ describe("Dispenser Provider tests", function () {
         const signatureData = [poolId, validTime, user.address, userData]
         const signature = await createSignature(signer, signatureData)
         await expect(
-            dispenserProvider.connect(owner).createLock(poolId, validTime, user.address, usersData, signature)
+            dispenserProvider.connect(owner).dispenseLock(poolId, validTime, user.address, usersData, signature)
         ).to.not.reverted
     })
 
     it("should revert double creation", async () => {
         const signatureData = [poolId, validTime, user.address, userData]
         const signature = await createSignature(signer, signatureData)
-        await dispenserProvider.connect(user).createLock(poolId, validTime, user.address, usersData, signature)
+        await dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
         await expect(
-            dispenserProvider.connect(user).createLock(poolId, validTime, user.address, usersData, signature)
+            dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
         ).to.be.revertedWith("DispenserProvider: Tokens already taken")
     })
 
@@ -133,7 +133,7 @@ describe("Dispenser Provider tests", function () {
         const signatureData = [poolId, validTime, user.address, userData]
         const signature = await createSignature(signer, signatureData)
         await expect(
-            dispenserProvider.connect(owner).createLock(poolId, validTime, user.address, usersData, signature)
+            dispenserProvider.connect(owner).dispenseLock(poolId, validTime, user.address, usersData, signature)
         ).to.be.revertedWith("DispenserProvider: Caller is not approved")
     })
 
@@ -149,5 +149,13 @@ describe("Dispenser Provider tests", function () {
         await expect(
             dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
         ).to.be.revertedWith("amount must be greater than 0")
+    })
+
+    it("should support IERC165 interface", async () => {
+        expect(await dispenserProvider.supportsInterface('0x01ffc9a7')).to.equal(true)
+    })
+
+    it("should support IDispenserProvider interface", async () => {
+        expect(await dispenserProvider.supportsInterface('0xda28ff53')).to.equal(true)
     })
 })
