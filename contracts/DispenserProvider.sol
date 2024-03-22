@@ -9,6 +9,8 @@ import "./DispenserState.sol";
 contract DispenserProvider is DealProvider, DispenserState {
     using ECDSA for bytes32;
 
+    event TokensDispensed(uint256 poolId, address user, bool isTaken, uint256 leftAmount);
+
     constructor(ILockDealNFT _lockDealNFT) DealProvider(_lockDealNFT) {
         name = "DispenserProvider";
     }
@@ -44,6 +46,7 @@ contract DispenserProvider is DealProvider, DispenserState {
         );
         _createSimpleNFTs(poolId, owner, data);
         isTaken[poolId][owner] = true;
+        emit TokensDispensed(poolId, owner, true, poolIdToAmount[poolId]);
     }
 
     function _encodeBuilder(

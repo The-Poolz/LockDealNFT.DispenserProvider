@@ -150,4 +150,12 @@ describe("Dispenser Provider tests", function () {
             dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
         ).to.be.revertedWith("amount must be greater than 0")
     })
+
+    it("should emit TokensDispensed event", async () => {
+        const signatureData = [poolId, validTime, user.address, userData]
+        const signature = await createSignature(signer, signatureData)
+        await expect(dispenserProvider.connect(user).createLock(poolId, validTime, user.address, usersData, signature))
+            .to.emit(dispenserProvider, "TokensDispensed")
+            .withArgs(poolId, user.address, true, amount.div(2))
+    })
 })
