@@ -28,7 +28,7 @@ abstract contract DispenserInternal is IDispenserProvider, DealProvider, Dispens
     ) internal returns(uint256 amountTaken) {
         for (uint256 i = 0; i < data.length; ++i) {
             require(data[i].params[0] > 0, "DispenserProvider: Amount must be greater than 0");
-            uint256 poolId = _handleSimpleNFT(tokenPoolId, owner, data[i]);
+            uint256 poolId = _createSimpleNFT(tokenPoolId, owner, data[i]);
             _withdrawIfAvailable(data[i].simpleProvider, poolId, owner);
             amountTaken += data[i].params[0];
         }
@@ -37,7 +37,7 @@ abstract contract DispenserInternal is IDispenserProvider, DealProvider, Dispens
         isTaken[tokenPoolId][owner] = true;
     }
 
-    function _handleSimpleNFT(
+    function _createSimpleNFT(
         uint256 tokenPoolId,
         address owner,
         Builder calldata data
