@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./DispenserInternal.sol";
 import "./DispenserModifiers.sol";
 
-contract DispenserProvider is DispenserInternal, DispenserModifiers {
+contract DispenserProvider is DispenserModifiers {
     constructor(ILockDealNFT _lockDealNFT) DealProvider(_lockDealNFT) {
         name = "DispenserProvider";
     }
 
-    function createLock(
+    function dispenseLock(
         uint256 poolId,
         uint256 validUntil,
         address owner,
@@ -24,5 +23,11 @@ contract DispenserProvider is DispenserInternal, DispenserModifiers {
     {
         _isValidSignature(poolId, validUntil, owner, data, signature);
         _createSimpleNFTs(poolId, owner, data);
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override returns (bool) {
+        return interfaceId == type(IDispenserProvider).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
 }

@@ -3,9 +3,10 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@poolzfinance/lockdeal-nft/contracts/SimpleProviders/DealProvider/DealProvider.sol";
+import "./interfaces/IDispenserProvider.sol";
 import "./DispenserState.sol";
 
-abstract contract DispenserInternal is DealProvider, DispenserState {
+abstract contract DispenserInternal is IDispenserProvider, DealProvider, DispenserState {
     using ECDSA for bytes32;
 
     function _encodeBuilder(
