@@ -65,7 +65,7 @@ describe("Dispenser Provider tests", function () {
         await dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
         validTime = ethers.BigNumber.from((await time.latest()) + ONE_DAY)
         userData = { simpleProvider: lockProvider.address, params: [amount.div(2), validTime] }
-        usersData = [{ simpleProvider: lockProvider.address, params: [amount.div(2), validTime] }]
+        usersData = [userData]
     })
 
     it("should return name of contract", async () => {
@@ -85,7 +85,7 @@ describe("Dispenser Provider tests", function () {
 
     it("should transfer if available", async () => {
         userData = { simpleProvider: dealProvider.address, params: [amount] }
-        usersData = [{ simpleProvider: dealProvider.address, params: [amount] }]
+        usersData = [userData]
         const signatureData = [poolId, validTime, user.address, userData]
         const signature = await createSignature(signer, signatureData)
         const beforeBalance = await token.balanceOf(user.address)
@@ -137,14 +137,14 @@ describe("Dispenser Provider tests", function () {
         ).to.be.revertedWith("DispenserProvider: Caller is not approved")
     })
 
-    it("should revert invalid signer address", async () => {
+    it("should revert zero token address", async () => {
         addresses = [signer.address, constants.AddressZero]
         await expect(
             dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
         ).to.be.revertedWith("Zero Address is not allowed")
     })
 
-    it("should revert invalid signer address", async () => {
+    it("should revert invalid amount", async () => {
         params = [BigNumber.from(0)]
         await expect(
             dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
@@ -157,5 +157,25 @@ describe("Dispenser Provider tests", function () {
 
     it("should support IDispenserProvider interface", async () => {
         expect(await dispenserProvider.supportsInterface('0xda28ff53')).to.equal(true)
+    })
+
+    it("should revert if params amount greater than leftAmount", async () => {
+        userData = { simpleProvider: lockProvider.address, params: [amount, validTime] }
+        usersData = [userData, userData]
+        const signatureData = [poolId, validTime, user.address, userData, userData]
+        const signature = await createSignature(signer, signatureData)
+        await expect(
+            dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
+        ).to.be.revertedWith("DispenserProvider: Not enough tokens in the pool")
+    })
+
+    it("should revert zero params amount", async () => {
+        const invalidUserData = { simpleProvider: lockProvider.address, params: [0, validTime] }
+        usersData = [userData, invalidUserData]
+        const signatureData = [poolId, validTime, user.address, userData, invalidUserData]
+        const signature = await createSignature(signer, signatureData)
+        await expect(
+            dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
+        ).to.be.revertedWith("DispenserProvider: Amount must be greater than 0")
     })
 })
