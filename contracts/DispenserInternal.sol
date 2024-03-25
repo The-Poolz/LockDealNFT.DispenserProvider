@@ -25,13 +25,25 @@ abstract contract DispenserInternal is IDispenserProvider, DealProvider, Dispens
         uint256 tokenPoolId,
         address owner,
         Builder[] calldata data
-    ) internal returns(uint256 amountTaken) {
+    ) internal returns (uint256 amountTaken) {
         for (uint256 i = 0; i < data.length; ++i) {
-            require(data[i].params[0] > 0, "DispenserProvider: Amount must be greater than 0");
-            uint256 poolId = _createSimpleNFT(tokenPoolId, owner, data[i]);
-            _withdrawIfAvailable(data[i].simpleProvider, poolId, owner);
-            amountTaken += data[i].params[0];
+            amountTaken += _nftIterator(tokenPoolId, owner, data[i]);
         }
+        _finalizeDeal(tokenPoolId, owner, amountTaken);
+    }
+
+    function _nftIterator(
+        uint256 tokenPoolId,
+        address owner,
+        Builder calldata data
+    ) internal returns (uint256 amountTaken) {
+        amountTaken = data.params[0]; // calling function must check for an array of non-zero length
+        require(amountTaken > 0, "DispenserProvider: Amount must be greater than 0");
+        uint256 poolId = _createSimpleNFT(tokenPoolId, owner, data);
+        _withdrawIfAvailable(data.simpleProvider, poolId, owner);
+    }
+
+    function _finalizeDeal(uint256 tokenPoolId, address owner, uint256 amountTaken) internal {
         require(amountTaken <= poolIdToAmount[tokenPoolId], "DispenserProvider: Not enough tokens in the pool");
         poolIdToAmount[tokenPoolId] -= amountTaken;
         isTaken[tokenPoolId][owner] = true;
