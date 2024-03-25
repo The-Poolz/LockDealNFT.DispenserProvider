@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./DispenserModifiers.sol";
+import "./DispenserRequires.sol";
 
-contract DispenserProvider is DispenserModifiers {
+contract DispenserProvider is DispenserRequires {
     constructor(ILockDealNFT _lockDealNFT) DealProvider(_lockDealNFT) {
         name = "DispenserProvider";
     }
@@ -17,12 +17,13 @@ contract DispenserProvider is DispenserModifiers {
     )
         external
         validProviderId(poolId)
-        isCallerApproved(poolId, owner)
-        isValidTime(validUntil)
-        isAlreadyTaken(poolId, owner)
     {
+        _isCallerApproved(poolId, owner);
+        _isValidTime(validUntil);
+        _isAlreadyTaken(poolId, owner);
         _isValidSignature(poolId, validUntil, owner, data, signature);
-        _handleSimpleNFTs(poolId, owner, data);
+        uint256 amountTaken = _handleSimpleNFTs(poolId, owner, data);
+        emit TokensDispensed(poolId, owner, amountTaken, poolIdToAmount[poolId]);
     }
 
     function supportsInterface(

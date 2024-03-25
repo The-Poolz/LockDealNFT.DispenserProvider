@@ -151,6 +151,14 @@ describe("Dispenser Provider tests", function () {
         ).to.be.revertedWith("amount must be greater than 0")
     })
 
+    it("should emit TokensDispensed event", async () => {
+        const signatureData = [poolId, validTime, user.address, userData]
+        const signature = await createSignature(signer, signatureData)
+        await expect(dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature))
+            .to.emit(dispenserProvider, "TokensDispensed")
+            .withArgs(poolId, user.address, amount.div(2), amount.div(2))
+    })
+
     it("should support IERC165 interface", async () => {
         expect(await dispenserProvider.supportsInterface('0x01ffc9a7')).to.equal(true)
     })
