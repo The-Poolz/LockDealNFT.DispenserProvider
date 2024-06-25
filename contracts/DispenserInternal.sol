@@ -2,12 +2,14 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import "@poolzfinance/lockdeal-nft/contracts/SimpleProviders/DealProvider/DealProvider.sol";
 import "./interfaces/IDispenserProvider.sol";
 import "./DispenserState.sol";
 
 abstract contract DispenserInternal is IDispenserProvider, DealProvider, DispenserState {
     using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
 
     function _encodeBuilder(
         Builder[] calldata builder
