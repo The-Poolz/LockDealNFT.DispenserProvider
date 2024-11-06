@@ -5,11 +5,10 @@ import { MockVaultManager as VaultManager } from "../typechain-types/contracts/m
 import { LockDealProvider } from "../typechain-types/@poolzfinance/lockdeal-nft/contracts/SimpleProviders/LockProvider/LockDealProvider"
 import { ERC20Token } from "../typechain-types/@poolzfinance/poolz-helper-v2/contracts/token/ERC20Token"
 import { TimedDealProvider } from "../typechain-types/@poolzfinance/lockdeal-nft/contracts/SimpleProviders/TimedDealProvider/TimedDealProvider"
-import { DispenserState } from "../typechain-types/contracts/DispenserProvider"
+import { IDispenserProvider } from "../typechain-types/contracts/DispenserProvider"
 import { time } from "@nomicfoundation/hardhat-network-helpers"
 import { expect } from "chai"
 import { createSignature } from "./helper"
-import { Bytes, constants, BigNumber } from "ethers"
 import { ethers } from "hardhat"
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers"
 
@@ -21,17 +20,17 @@ describe("Dispenser Provider tests", function () {
     let token: ERC20Token
     let lockDealNFT: LockDealNFT
     let dealProvider: DealProvider
-    let userData: DispenserState.BuilderStruct
-    let usersData: DispenserState.BuilderStruct[]
+    let userData:IDispenserProvider.BuilderStruct
+    let usersData: IDispenserProvider.BuilderStruct[]
     let lockProvider: LockDealProvider
     let timedProvider: TimedDealProvider
     let vaultManager: VaultManager
-    let poolId: number
+    let poolId: bigint
     let addresses: string[]
-    let params: [BigNumber]
-    let validTime: BigNumber
-    const creationSignature: Bytes = ethers.utils.toUtf8Bytes("signature")
-    const amount = ethers.utils.parseUnits("10", 18)
+    let params: [bigint]
+    let validTime: number
+    const creationSignature: Uint8Array = ethers.toUtf8Bytes("signature")
+    const amount = ethers.parseUnits("10", 18)
     const ONE_DAY = 86400
 
     before(async () => {
@@ -39,32 +38,32 @@ describe("Dispenser Provider tests", function () {
         const VaultManagerFactory = await ethers.getContractFactory("MockVaultManager")
         vaultManager = (await VaultManagerFactory.deploy()) as VaultManager
         const LockDealNFTFactory = await ethers.getContractFactory("LockDealNFT")
-        lockDealNFT = (await LockDealNFTFactory.deploy(vaultManager.address, "")) as LockDealNFT
+        lockDealNFT = (await LockDealNFTFactory.deploy(await vaultManager.getAddress(), "")) as LockDealNFT
         const DispenserProvider = await ethers.getContractFactory("DispenserProvider")
-        dispenserProvider = await DispenserProvider.deploy(lockDealNFT.address)
+        dispenserProvider = await DispenserProvider.deploy(await lockDealNFT.getAddress())
         const DealProvider = await ethers.getContractFactory("DealProvider")
-        dealProvider = await DealProvider.deploy(lockDealNFT.address)
+        dealProvider = await DealProvider.deploy(await lockDealNFT.getAddress())
         const LockDealProvider = await ethers.getContractFactory("LockDealProvider")
-        lockProvider = await LockDealProvider.deploy(lockDealNFT.address, dealProvider.address)
+        lockProvider = await LockDealProvider.deploy(await lockDealNFT.getAddress(), await dealProvider.getAddress())
         const TimedDealProvider = await ethers.getContractFactory("TimedDealProvider")
-        timedProvider = await TimedDealProvider.deploy(lockDealNFT.address, lockProvider.address)
-        await lockDealNFT.setApprovedContract(dealProvider.address, true)
-        await lockDealNFT.setApprovedContract(lockProvider.address, true)
-        await lockDealNFT.setApprovedContract(timedProvider.address, true)
-        await lockDealNFT.setApprovedContract(dispenserProvider.address, true)
-        await lockDealNFT.connect(user).setApprovalForAll(dispenserProvider.address, true)
+        timedProvider = await TimedDealProvider.deploy(lockDealNFT.getAddress(), await lockProvider.getAddress())
+        await lockDealNFT.setApprovedContract(await dealProvider.getAddress(), true)
+        await lockDealNFT.setApprovedContract(await lockProvider.getAddress(), true)
+        await lockDealNFT.setApprovedContract(await timedProvider.getAddress(), true)
+        await lockDealNFT.setApprovedContract(await dispenserProvider.getAddress(), true)
+        await lockDealNFT.connect(user).setApprovalForAll(await dispenserProvider.getAddress(), true)
     })
 
     beforeEach(async () => {
         const ERC20Token = await ethers.getContractFactory("ERC20Token")
         token = await ERC20Token.deploy("Test", "TST")
         params = [amount]
-        addresses = [signer.address, token.address]
-        poolId = (await lockDealNFT.totalSupply()).toNumber()
-        await token.approve(vaultManager.address, amount)
+        addresses = [await signer.getAddress(), await token.getAddress()]
+        poolId = await lockDealNFT.totalSupply()
+        await token.approve(await vaultManager.getAddress(), amount)
         await dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
-        validTime = ethers.BigNumber.from((await time.latest()) + ONE_DAY)
-        userData = { simpleProvider: lockProvider.address, params: [amount.div(2), validTime] }
+        validTime = (await time.latest()) + ONE_DAY
+        userData = { simpleProvider: await lockProvider.getAddress(), params: [amount / 2n, validTime] }
         usersData = [userData]
     })
 
@@ -77,88 +76,104 @@ describe("Dispenser Provider tests", function () {
     })
 
     it("should deacrease leftAmount after lock", async () => {
-        const signatureData = [poolId, validTime, user.address, userData]
+        const signatureData = [poolId, validTime, await user.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
-        await dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
-        expect(await dispenserProvider.poolIdToAmount(poolId)).to.equal(amount.div(2))
+        await dispenserProvider
+            .connect(user)
+            .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+        expect(await dispenserProvider.poolIdToAmount(poolId)).to.equal(amount / 2n)
     })
 
     it("should transfer if available", async () => {
-        userData = { simpleProvider: dealProvider.address, params: [amount] }
+        userData = { simpleProvider: await dealProvider.getAddress(), params: [amount] }
         usersData = [userData]
-        const signatureData = [poolId, validTime, user.address, userData]
+        const signatureData = [poolId, validTime, await user.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
-        const beforeBalance = await token.balanceOf(user.address)
-        await dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
+        const beforeBalance = await token.balanceOf(await user.getAddress())
+        await dispenserProvider
+            .connect(user)
+            .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
         // check if user has tokens after the transfer
-        expect(await token.balanceOf(user.address)).to.equal(beforeBalance.add(amount))
+        expect(await token.balanceOf(await user.getAddress())).to.equal(beforeBalance + amount)
     })
 
     it("should create lock if approved for all", async () => {
-        await lockDealNFT.connect(user).setApprovalForAll(owner.address, true)
-        const signatureData = [poolId, validTime, user.address, userData]
+        await lockDealNFT.connect(user).setApprovalForAll(await owner.getAddress(), true)
+        const signatureData = [poolId, validTime, await user.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
         await expect(
-            dispenserProvider.connect(owner).dispenseLock(poolId, validTime, user.address, usersData, signature)
+            dispenserProvider
+                .connect(owner)
+                .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
         ).to.not.reverted
-        await lockDealNFT.connect(user).setApprovalForAll(owner.address, false)
+        await lockDealNFT.connect(user).setApprovalForAll(await owner.getAddress(), false)
     })
 
     it("should create lock if approved poolId", async () => {
-        await lockDealNFT.connect(signer).approve(owner.address, poolId)
-        const signatureData = [poolId, validTime, user.address, userData]
+        await lockDealNFT.connect(signer).approve(await owner.getAddress(), poolId)
+        const signatureData = [poolId, validTime, await user.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
         await expect(
-            dispenserProvider.connect(owner).dispenseLock(poolId, validTime, user.address, usersData, signature)
+            dispenserProvider
+                .connect(owner)
+                .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
         ).to.not.reverted
     })
 
     it("should revert double creation", async () => {
-        const signatureData = [poolId, validTime, user.address, userData]
+        const signatureData = [poolId, validTime, await user.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
-        await dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
+        await dispenserProvider
+            .connect(user)
+            .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
         await expect(
-            dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
+            dispenserProvider
+                .connect(user)
+                .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "TokensAlreadyTaken")
     })
 
     it("should revert invalid signer address", async () => {
-        addresses = [constants.AddressZero, token.address]
+        addresses = [ethers.ZeroAddress, await token.getAddress()]
         await expect(
             dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
         ).to.be.revertedWith("Zero Address is not allowed")
     })
 
     it("should revert if sender is invalid", async () => {
-        const signatureData = [poolId, validTime, user.address, userData]
+        const signatureData = [poolId, validTime, await user.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
         await expect(
-            dispenserProvider.connect(owner).dispenseLock(poolId, validTime, user.address, usersData, signature)
+            dispenserProvider
+                .connect(owner)
+                .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "CallerNotApproved")
     })
 
     it("should revert zero token address", async () => {
-        addresses = [signer.address, constants.AddressZero]
+        addresses = [await signer.getAddress(), ethers.ZeroAddress]
         await expect(
             dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
         ).to.be.revertedWith("Zero Address is not allowed")
     })
 
     it("should revert invalid amount", async () => {
-        params = [BigNumber.from(0)]
+        params = [0n]
         await expect(
             dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
         ).to.be.revertedWith("amount must be greater than 0")
     })
 
     it("should emit TokensDispensed event", async () => {
-        const signatureData = [poolId, validTime, user.address, userData]
+        const signatureData = [poolId, validTime, await user.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
         await expect(
-            dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
+            dispenserProvider
+                .connect(user)
+                .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
         )
             .to.emit(dispenserProvider, "TokensDispensed")
-            .withArgs(poolId, user.address, amount.div(2), amount.div(2))
+            .withArgs(poolId, await user.getAddress(), amount / 2n, amount / 2n)
     })
 
     it("should support IERC165 interface", async () => {
@@ -170,22 +185,26 @@ describe("Dispenser Provider tests", function () {
     })
 
     it("should revert if params amount greater than leftAmount", async () => {
-        userData = { simpleProvider: lockProvider.address, params: [amount, validTime] }
+        userData = { simpleProvider: await lockProvider.getAddress(), params: [amount, validTime] }
         usersData = [userData, userData]
-        const signatureData = [poolId, validTime, user.address, userData, userData]
+        const signatureData = [poolId, validTime, await user.getAddress(), userData, userData]
         const signature = await createSignature(signer, signatureData)
         await expect(
-            dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
+            dispenserProvider
+                .connect(user)
+                .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "NotEnoughTokensInPool")
     })
 
     it("should revert zero params amount", async () => {
-        const invalidUserData = { simpleProvider: lockProvider.address, params: [0, validTime] }
+        const invalidUserData = { simpleProvider: await lockProvider.getAddress(), params: [0, validTime] }
         usersData = [userData, invalidUserData]
-        const signatureData = [poolId, validTime, user.address, userData, invalidUserData]
+        const signatureData = [poolId, validTime, await user.getAddress(), userData, invalidUserData]
         const signature = await createSignature(signer, signatureData)
         await expect(
-            dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
+            dispenserProvider
+                .connect(user)
+                .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "AmountMustBeGreaterThanZero")
     })
 })

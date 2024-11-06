@@ -12,3 +12,9 @@ node_modules
 # solidity-coverage files
 /coverage
 /coverage.json
+
+# gas-report files
+temp.zip
+yarn.lock
+gas-report.txt
+gasReport.md

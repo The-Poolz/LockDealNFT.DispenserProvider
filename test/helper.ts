@@ -11,7 +11,7 @@ export async function createSignature(signer: SignerWithAddress, data: any[]): P
         } else if (typeof element === "object" && Array.isArray(element)) {
             types.push("uint256[]")
             values.push(element)
-        } else if (typeof element === "number" || ethers.BigNumber.isBigNumber(element)) {
+        } else if (typeof element === "number" || typeof element === "bigint") {
             types.push("uint256")
             values.push(element)
         } else if (typeof element === "object" && !Array.isArray(element)) {
@@ -21,6 +21,6 @@ export async function createSignature(signer: SignerWithAddress, data: any[]): P
             values.push(element.params)
         }
     }
-    const packedData = ethers.utils.solidityKeccak256(types, values)
-    return signer.signMessage(ethers.utils.arrayify(packedData))
+    const packedData = ethers.solidityPackedKeccak256(types, values)
+    return signer.signMessage(ethers.getBytes(packedData))
 }
