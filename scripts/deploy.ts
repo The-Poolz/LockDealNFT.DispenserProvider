@@ -5,9 +5,7 @@ async function main() {
     const DispenserProvider = await ethers.getContractFactory("DispenserProvider")
     const dispenserProvider = await DispenserProvider.deploy(lockDealNFT)
 
-    await dispenserProvider.deployed()
-
-    console.log("TemplateContract deployed to:", dispenserProvider.address)
+    console.log("DispenserProvider deployed to:", await dispenserProvider.getAddress())
 }
 
 main().catch((error) => {
