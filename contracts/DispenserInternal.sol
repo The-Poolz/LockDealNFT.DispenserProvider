@@ -63,7 +63,9 @@ abstract contract DispenserInternal is IDispenserProvider, DealProvider, Dispens
         Builder calldata data
     ) internal returns (uint256 amountTaken) {
         amountTaken = data.params[0]; // calling function must check for an array of non-zero length
-        require(amountTaken > 0, "DispenserProvider: Amount must be greater than 0");
+        if (amountTaken == 0) {
+            revert AmountMustBeGreaterThanZero();
+        }
         uint256 poolId = _createSimpleNFT(tokenPoolId, owner, data);
         _withdrawIfAvailable(data.simpleProvider, poolId, owner);
     }
@@ -74,7 +76,9 @@ abstract contract DispenserInternal is IDispenserProvider, DealProvider, Dispens
     /// @param owner The address of the owner requesting to dispense tokens.
     /// @param amountTaken The total amount of tokens dispensed from the pool.
     function _finalizeDeal(uint256 tokenPoolId, address owner, uint256 amountTaken) internal {
-        require(amountTaken <= poolIdToAmount[tokenPoolId], "DispenserProvider: Not enough tokens in the pool");
+        if (amountTaken > poolIdToAmount[tokenPoolId]) {
+            revert NotEnoughTokensInPool(amountTaken, poolIdToAmount[tokenPoolId]);
+        }
         poolIdToAmount[tokenPoolId] -= amountTaken;
         isTaken[tokenPoolId][owner] = true;
     }

@@ -119,7 +119,7 @@ describe("Dispenser Provider tests", function () {
         await dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
         await expect(
             dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
-        ).to.be.revertedWith("DispenserProvider: Tokens already taken")
+        ).to.be.revertedWithCustomError(dispenserProvider, "TokensAlreadyTaken")
     })
 
     it("should revert invalid signer address", async () => {
@@ -134,7 +134,7 @@ describe("Dispenser Provider tests", function () {
         const signature = await createSignature(signer, signatureData)
         await expect(
             dispenserProvider.connect(owner).dispenseLock(poolId, validTime, user.address, usersData, signature)
-        ).to.be.revertedWith("DispenserProvider: Caller is not approved")
+        ).to.be.revertedWithCustomError(dispenserProvider, "CallerNotApproved")
     })
 
     it("should revert zero token address", async () => {
@@ -154,17 +154,19 @@ describe("Dispenser Provider tests", function () {
     it("should emit TokensDispensed event", async () => {
         const signatureData = [poolId, validTime, user.address, userData]
         const signature = await createSignature(signer, signatureData)
-        await expect(dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature))
+        await expect(
+            dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
+        )
             .to.emit(dispenserProvider, "TokensDispensed")
             .withArgs(poolId, user.address, amount.div(2), amount.div(2))
     })
 
     it("should support IERC165 interface", async () => {
-        expect(await dispenserProvider.supportsInterface('0x01ffc9a7')).to.equal(true)
+        expect(await dispenserProvider.supportsInterface("0x01ffc9a7")).to.equal(true)
     })
 
     it("should support IDispenserProvider interface", async () => {
-        expect(await dispenserProvider.supportsInterface('0xda28ff53')).to.equal(true)
+        expect(await dispenserProvider.supportsInterface("0xda28ff53")).to.equal(true)
     })
 
     it("should revert if params amount greater than leftAmount", async () => {
@@ -174,7 +176,7 @@ describe("Dispenser Provider tests", function () {
         const signature = await createSignature(signer, signatureData)
         await expect(
             dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
-        ).to.be.revertedWith("DispenserProvider: Not enough tokens in the pool")
+        ).to.be.revertedWithCustomError(dispenserProvider, "NotEnoughTokensInPool")
     })
 
     it("should revert zero params amount", async () => {
@@ -184,6 +186,6 @@ describe("Dispenser Provider tests", function () {
         const signature = await createSignature(signer, signatureData)
         await expect(
             dispenserProvider.connect(user).dispenseLock(poolId, validTime, user.address, usersData, signature)
-        ).to.be.revertedWith("DispenserProvider: Amount must be greater than 0")
+        ).to.be.revertedWithCustomError(dispenserProvider, "AmountMustBeGreaterThanZero")
     })
 })

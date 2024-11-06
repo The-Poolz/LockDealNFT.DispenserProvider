@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./DispenserRequires.sol";
+import "./DispenserReverts.sol";
 
 /// @title DispenserProvider
 /// @dev A contract that provides the functionality for dispensing tokens based on a locking mechanism.
 ///      This contract extends the functionality of `DispenserRequires` and interacts with `DealProvider`.
 ///      It allows users to dispense locked tokens from a specified pool after passing multiple validation checks.
-contract DispenserProvider is DispenserRequires {
+contract DispenserProvider is DispenserReverts {
     /// @param _lockDealNFT The address of the `ILockDealNFT` contract, which is used for handling NFT minting and vault management.
     constructor(ILockDealNFT _lockDealNFT) DealProvider(_lockDealNFT) {
         name = "DispenserProvider";
