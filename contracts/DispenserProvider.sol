@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./DispenserRequires.sol";
+import "./DispenserReverts.sol";
 
-contract DispenserProvider is DispenserRequires {
+contract DispenserProvider is DispenserReverts {
     constructor(ILockDealNFT _lockDealNFT) DealProvider(_lockDealNFT) {
         name = "DispenserProvider";
     }
