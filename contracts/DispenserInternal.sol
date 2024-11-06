@@ -99,7 +99,7 @@ abstract contract DispenserInternal is IDispenserProvider, DealProvider, Dispens
     }
 
     /// @notice Withdraws tokens from the provider if the withdrawable amount is greater than zero.
-    /// @dev Transfers the tokens from the owner to the `lockDealNFT` contract if available.
+    /// @dev Transfers the NFT token from its owner to the `lockDealNFT` contract if there is a withdrawable amount
     /// @param poolId The unique identifier for the pool to withdraw from.
     function _withdrawIfAvailable(uint256 poolId) internal {
         if (lockDealNFT.getWithdrawableAmount(poolId) > 0) {
