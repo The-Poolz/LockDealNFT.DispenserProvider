@@ -35,7 +35,7 @@ describe("Dispenser Provider tests", function () {
     const ONE_DAY = 86400
 
     before(async () => {
-        ;[owner, user, signer] = await ethers.getSigners()
+        [owner, user, signer] = await ethers.getSigners()
         const VaultManagerFactory = await ethers.getContractFactory("MockVaultManager")
         vaultManager = (await VaultManagerFactory.deploy()) as VaultManager
         const LockDealNFTFactory = await ethers.getContractFactory("LockDealNFT")
