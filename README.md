@@ -63,6 +63,7 @@ The `DispenserProvider` contract manages token dispensing in collaboration with 
 
 
 ## Contracts diagram
+![classDiagram](https://github.com/user-attachments/assets/3b1d1012-7784-4d5d-b6f1-221cfa88868f)
 
 ## Create Dispenser Pool
 
