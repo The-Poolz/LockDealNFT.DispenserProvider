@@ -3,15 +3,15 @@ pragma solidity ^0.8.0;
 
 import "./DispenserInternal.sol";
 
-/// @title DispenserReverts
+/// @title DispenserModifiers
 /// @dev Contract for handling the revert logic during token dispensing operations in the Dispenser.
-abstract contract DispenserReverts is DispenserInternal {
+abstract contract DispenserModifiers is DispenserInternal {
     /// @notice Ensures the caller is either the owner or an approved address for the specified pool.
     /// @dev Reverts with a `CallerNotApproved` error if the caller is not the owner or approved.
     /// @param poolId The ID of the pool to verify the caller’s approval for.
     /// @param owner The address of the pool owner.
     /// @dev Reverts if the caller is neither the owner nor approved by the owner.
-    function _isCallerApproved(uint256 poolId, address owner) internal view {
+    modifier isCallerApproved(uint256 poolId, address owner) {
         if (
             msg.sender != owner &&
             lockDealNFT.getApproved(poolId) != msg.sender &&
@@ -19,16 +19,18 @@ abstract contract DispenserReverts is DispenserInternal {
         ) {
             revert CallerNotApproved(msg.sender, owner, poolId);
         }
+        _;
     }
 
     /// @notice Ensures that the `validUntil` timestamp is not in the past.
     /// @dev Reverts with an `InvalidTime` error if the `validUntil` timestamp is earlier than the current block timestamp.
     /// @param validUntil The timestamp until which the dispense is valid.
     /// @dev Reverts if the `validUntil` timestamp is in the past.
-    function _isValidTime(uint256 validUntil) internal view {
+    modifier isValidTime(uint256 validUntil) {
         if (validUntil < block.timestamp) {
             revert InvalidTime(block.timestamp, validUntil);
         }
+        _;
     }
 
     /// @notice Validates the signature provided for the dispense action.
@@ -38,13 +40,13 @@ abstract contract DispenserReverts is DispenserInternal {
     /// @param owner The owner of the pool.
     /// @param data The data associated with the dispensation.
     /// @param signature The cryptographic signature to verify.
-    function _isValidSignature(
+    modifier isValidSignature(
         uint256 poolId,
         uint256 validUntil,
         address owner,
         Builder[] calldata data,
         bytes calldata signature
-    ) internal view {
+    ) {
         if (
             !_checkData(
                 poolId,
@@ -54,15 +56,17 @@ abstract contract DispenserReverts is DispenserInternal {
         ) {
             revert InvalidSignature(poolId, owner);
         }
+        _;
     }
 
     /// @notice Ensures that the tokens have not already been taken for the specified pool and owner.
     /// @dev Reverts with a `TokensAlreadyTaken` error if tokens have already been dispensed for the given pool and owner.
     /// @param poolId The pool ID to check.
     /// @param owner The owner to verify if tokens have already been dispensed.
-    function _isAlreadyTaken(uint256 poolId, address owner) internal view {
+    modifier isAlreadyTaken(uint256 poolId, address owner) {
         if (isTaken[poolId][owner]) {
             revert TokensAlreadyTaken(poolId, owner);
         }
+        _;
     }
 }

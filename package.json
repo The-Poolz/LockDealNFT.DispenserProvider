@@ -15,7 +15,7 @@
         "@nomicfoundation/hardhat-network-helpers": "^1.0.12",
         "@nomicfoundation/hardhat-verify": "^2.0.6",
         "@truffle/dashboard-hardhat-plugin": "^0.2.15",
-        "hardhat": "^2.20.0",
+        "hardhat": "^2.22.15",
         "@typechain/ethers-v6": "^0.5.1",
         "@typechain/hardhat": "^9.1.0",
         "solidity-coverage": "^0.8.13",
