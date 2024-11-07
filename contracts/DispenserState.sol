@@ -6,7 +6,7 @@ import "@poolzfinance/lockdeal-nft/contracts/SimpleProviders/DealProvider/DealPr
 
 /// @title DispenserState
 /// @dev This contract maintains the state of token claim status for each pool and address.
-contract DispenserState is IDispenserProvider, DealProvider {
+abstract contract DispenserState is IDispenserProvider, DealProvider {
     /// @notice Tracks if tokens have been taken by a specific address for a specific pool ID.
     /// @dev The `isTaken` mapping uses `poolId` and `address` to store claim status.
     ///      Returns `true` if the user has already taken tokens from the pool, otherwise `false`.
