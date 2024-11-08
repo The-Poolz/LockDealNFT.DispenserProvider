@@ -3,15 +3,13 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import "@poolzfinance/lockdeal-nft/contracts/SimpleProviders/DealProvider/DealProvider.sol";
-import "./interfaces/IDispenserProvider.sol";
 import "./DispenserState.sol";
 
 /// @title DispenserInternal
 /// @dev Abstract contract that implements the logic for handling token dispensing and NFT management.
 ///      This contract is responsible for encoding builder data, handling simple NFTs, and ensuring the correct 
 ///      amount of tokens are dispensed from the pool.
-abstract contract DispenserInternal is IDispenserProvider, DealProvider, DispenserState {
+abstract contract DispenserInternal is DispenserState {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
