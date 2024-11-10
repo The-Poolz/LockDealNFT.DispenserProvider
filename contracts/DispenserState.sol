@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@poolzfinance/poolz-helper-v2/contracts/interfaces/ILockDealNFT.sol";
-import "@poolzfinance/poolz-helper-v2/contracts/interfaces/IVaultManager.sol";
+import "./interfaces/IDispenserProvider.sol";
+import "@poolzfinance/lockdeal-nft/contracts/SimpleProviders/DealProvider/DealProvider.sol";
 
 /// @title DispenserState
 /// @dev This contract maintains the state of token claim status for each pool and address.
-contract DispenserState {
+abstract contract DispenserState is IDispenserProvider, DealProvider {
     /// @notice Tracks if tokens have been taken by a specific address for a specific pool ID.
     /// @dev The `isTaken` mapping uses `poolId` and `address` to store claim status.
     ///      Returns `true` if the user has already taken tokens from the pool, otherwise `false`.
