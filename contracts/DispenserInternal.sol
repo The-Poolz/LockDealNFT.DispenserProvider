@@ -65,7 +65,7 @@ abstract contract DispenserInternal is DispenserState {
             revert AmountMustBeGreaterThanZero();
         }
         uint256 poolId = _createSimpleNFT(tokenPoolId, owner, data);
-        _withdrawIfAvailable(data.simpleProvider, poolId, owner);
+        _withdrawIfAvailable(poolId);
     }
 
     /// @notice Finalizes the deal by ensuring the dispensed amount does not exceed the available tokens in the pool.
@@ -97,17 +97,11 @@ abstract contract DispenserInternal is DispenserState {
     }
 
     /// @notice Withdraws tokens from the provider if the withdrawable amount is greater than zero.
-    /// @dev Transfers the tokens from the owner to the `lockDealNFT` contract if available.
-    /// @param provider The simple provider from which tokens will be withdrawn.
+    /// @dev Transfers the NFT token from its owner to the `lockDealNFT` contract if there is a withdrawable amount
     /// @param poolId The unique identifier for the pool to withdraw from.
-    /// @param owner The address of the owner of the tokens being withdrawn.
-    function _withdrawIfAvailable(
-        ISimpleProvider provider,
-        uint256 poolId,
-        address owner
-    ) internal {
-        if (provider.getWithdrawableAmount(poolId) > 0) {
-            lockDealNFT.safeTransferFrom(owner, address(lockDealNFT), poolId);
+    function _withdrawIfAvailable(uint256 poolId) internal {
+        if (lockDealNFT.getWithdrawableAmount(poolId) > 0) {
+            lockDealNFT.safeTransferFrom(lockDealNFT.ownerOf(poolId), address(lockDealNFT), poolId);
         }
     }
 
