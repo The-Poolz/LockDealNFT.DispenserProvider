@@ -7,7 +7,7 @@ import "./DispenserState.sol";
 
 /// @title DispenserInternal
 /// @dev Abstract contract that implements the logic for handling token dispensing and NFT management.
-///      This contract is responsible for encoding builder data, handling simple NFTs, and ensuring the correct 
+///      This contract is responsible for encoding builder data, handling simple NFTs, and ensuring the correct
 ///      amount of tokens are dispensed from the pool.
 abstract contract DispenserInternal is DispenserState {
     using ECDSA for bytes32;
@@ -42,7 +42,7 @@ abstract contract DispenserInternal is DispenserState {
         uint256 tokenPoolId,
         address owner,
         Builder[] calldata data
-    ) internal returns (uint256 amountTaken) {
+    ) internal firewallProtectedSig(0x32aa97c4) returns (uint256 amountTaken) {
         for (uint256 i = 0; i < data.length; ++i) {
             amountTaken += _nftIterator(tokenPoolId, owner, data[i]);
         }
@@ -59,7 +59,7 @@ abstract contract DispenserInternal is DispenserState {
         uint256 tokenPoolId,
         address owner,
         Builder calldata data
-    ) internal returns (uint256 amountTaken) {
+    ) internal firewallProtectedSig(0x592181eb) returns (uint256 amountTaken) {
         amountTaken = data.params[0]; // calling function must check for an array of non-zero length
         if (amountTaken == 0) {
             revert AmountMustBeGreaterThanZero();
@@ -73,7 +73,11 @@ abstract contract DispenserInternal is DispenserState {
     /// @param tokenPoolId The unique identifier for the token pool.
     /// @param owner The address of the owner requesting to dispense tokens.
     /// @param amountTaken The total amount of tokens dispensed from the pool.
-    function _finalizeDeal(uint256 tokenPoolId, address owner, uint256 amountTaken) internal {
+    function _finalizeDeal(
+        uint256 tokenPoolId,
+        address owner,
+        uint256 amountTaken
+    ) internal firewallProtectedSig(0x52f83cd6) {
         if (amountTaken > poolIdToAmount[tokenPoolId]) {
             revert NotEnoughTokensInPool(amountTaken, poolIdToAmount[tokenPoolId]);
         }
@@ -90,7 +94,7 @@ abstract contract DispenserInternal is DispenserState {
         uint256 tokenPoolId,
         address owner,
         Builder calldata data
-    ) internal returns(uint256 poolId) {
+    ) internal firewallProtectedSig(0xe64fbb17) returns (uint256 poolId) {
         poolId = lockDealNFT.mintForProvider(owner, data.simpleProvider);
         data.simpleProvider.registerPool(poolId, data.params);
         lockDealNFT.cloneVaultId(poolId, tokenPoolId);
@@ -99,9 +103,11 @@ abstract contract DispenserInternal is DispenserState {
     /// @notice Withdraws tokens from the provider if the withdrawable amount is greater than zero.
     /// @dev Transfers the NFT token from its owner to the `lockDealNFT` contract if there is a withdrawable amount
     /// @param poolId The unique identifier for the pool to withdraw from.
-    function _withdrawIfAvailable(uint256 poolId) internal {
+    function _withdrawIfAvailable(
+        uint256 poolId
+    ) internal firewallProtectedSig(0xa7008a13) {
         if (lockDealNFT.getWithdrawableAmount(poolId) > 0) {
-            lockDealNFT.safeTransferFrom(lockDealNFT.ownerOf(poolId), address(lockDealNFT), poolId);
+            lockDealNFT.safeTransferFrom(lockDealNFT.ownerOf(poolId), address(lockDealNFT),poolId);
         }
     }
 
