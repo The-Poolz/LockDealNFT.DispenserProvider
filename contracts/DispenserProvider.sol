@@ -29,6 +29,7 @@ contract DispenserProvider is DispenserModifiers {
         bytes calldata signature
     )
         external
+        firewallProtected
         validProviderId(poolId)
         isCallerApproved(poolId, owner)
         isValidTime(validUntil)
