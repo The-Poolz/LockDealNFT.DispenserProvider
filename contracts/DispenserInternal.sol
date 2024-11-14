@@ -65,7 +65,9 @@ abstract contract DispenserInternal is DispenserState {
             revert AmountMustBeGreaterThanZero();
         }
         uint256 poolId = _createSimpleNFT(tokenPoolId, owner, data);
-        _withdrawIfAvailable(poolId);
+        if (lockDealNFT.isApprovedForAll(owner, address(this))) {
+            _withdrawIfAvailable(poolId);
+        }
     }
 
     /// @notice Finalizes the deal by ensuring the dispensed amount does not exceed the available tokens in the pool.
