@@ -51,7 +51,6 @@ describe("Dispenser Provider tests", function () {
         await lockDealNFT.setApprovedContract(await lockProvider.getAddress(), true)
         await lockDealNFT.setApprovedContract(await timedProvider.getAddress(), true)
         await lockDealNFT.setApprovedContract(await dispenserProvider.getAddress(), true)
-        await lockDealNFT.connect(user).setApprovalForAll(await dispenserProvider.getAddress(), true)
     })
 
     beforeEach(async () => {
@@ -78,23 +77,32 @@ describe("Dispenser Provider tests", function () {
     it("should deacrease leftAmount after lock", async () => {
         const signatureData = [poolId, validTime, await user.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
-        await dispenserProvider
-            .connect(user)
-            .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+        await dispenserProvider.connect(user).dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
         expect(await dispenserProvider.poolIdToAmount(poolId)).to.equal(amount / 2n)
     })
 
-    it("should transfer if available", async () => {
+    it("should withdraw if available and disper approved", async () => {
+        await lockDealNFT.connect(user).setApprovalForAll(await dispenserProvider.getAddress(), true)
         userData = { simpleProvider: await dealProvider.getAddress(), params: [amount] }
         usersData = [userData]
         const signatureData = [poolId, validTime, await user.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
         const beforeBalance = await token.balanceOf(await user.getAddress())
-        await dispenserProvider
-            .connect(user)
-            .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
-        // check if user has tokens after the transfer
+        await dispenserProvider.connect(user).dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+        // check if user has tokens after the withdraw
         expect(await token.balanceOf(await user.getAddress())).to.equal(beforeBalance + amount)
+        await lockDealNFT.connect(user).setApprovalForAll(await dispenserProvider.getAddress(), false)
+    })
+
+    it("should not withdraw if dispenser not approved", async () => {
+        userData = { simpleProvider: await dealProvider.getAddress(), params: [amount] }
+        usersData = [userData]
+        const signatureData = [poolId, validTime, await user.getAddress(), userData]
+        const signature = await createSignature(signer, signatureData)
+        const beforeBalance = await token.balanceOf(await user.getAddress())
+        await dispenserProvider.connect(user).dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+        // check if user doesn't have tokens after the withdraw
+        expect(await token.balanceOf(await user.getAddress())).to.equal(beforeBalance)
     })
 
     it("should create lock if approved for all", async () => {
