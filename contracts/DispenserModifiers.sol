@@ -13,9 +13,9 @@ abstract contract DispenserModifiers is DispenserInternal {
     /// @dev Reverts if the caller is neither the owner nor approved by the owner.
     modifier isCallerApproved(uint256 poolId, address owner) {
         if (
-            msg.sender != owner &&
-            lockDealNFT.getApproved(poolId) != msg.sender &&
-            !lockDealNFT.isApprovedForAll(owner, msg.sender)
+            !(owner == msg.sender ||
+                lockDealNFT.ownerOf(poolId) == msg.sender ||
+                lockDealNFT.isApprovedForAll(owner, msg.sender))
         ) {
             revert CallerNotApproved(msg.sender, owner, poolId);
         }
@@ -50,7 +50,12 @@ abstract contract DispenserModifiers is DispenserInternal {
         if (
             !_checkData(
                 poolId,
-                abi.encodePacked(poolId, validUntil, owner, _encodeBuilder(data)),
+                abi.encodePacked(
+                    poolId,
+                    validUntil,
+                    owner,
+                    _encodeBuilder(data)
+                ),
                 signature
             )
         ) {
