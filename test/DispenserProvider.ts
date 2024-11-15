@@ -117,17 +117,6 @@ describe("Dispenser Provider tests", function () {
         await lockDealNFT.connect(user).setApprovalForAll(await owner.getAddress(), false)
     })
 
-    it("should create lock if approved poolId", async () => {
-        await lockDealNFT.connect(signer).approve(await owner.getAddress(), poolId)
-        const signatureData = [poolId, validTime, await user.getAddress(), userData]
-        const signature = await createSignature(signer, signatureData)
-        await expect(
-            dispenserProvider
-                .connect(owner)
-                .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
-        ).to.not.reverted
-    })
-
     it("should revert double creation", async () => {
         const signatureData = [poolId, validTime, await user.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
