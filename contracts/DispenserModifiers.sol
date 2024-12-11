@@ -68,7 +68,7 @@ abstract contract DispenserModifiers is DispenserInternal {
     /// @dev Reverts with a `TokensAlreadyTaken` error if tokens have already been dispensed for the given pool and owner.
     /// @param poolId The pool ID to check.
     /// @param owner The owner to verify if tokens have already been dispensed.
-    modifier isAlreadyTaken(uint256 poolId, address owner) {
+    modifier isNotAlreadyTaken(uint256 poolId, address owner) {
         if (isTaken[poolId][owner]) {
             revert TokensAlreadyTaken(poolId, owner);
         }
