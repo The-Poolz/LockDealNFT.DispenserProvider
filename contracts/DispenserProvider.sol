@@ -37,8 +37,8 @@ contract DispenserProvider is DispenserModifiers {
         validProviderId(poolId)
         isCallerApproved(poolId, receiver)
         isValidTime(validUntil)
-        isUnclaimed(poolId, owner)
-        isValidSignature(poolId, validUntil, owner, data, signature)
+        isUnclaimed(poolId, receiver)
+        isValidSignature(poolId, validUntil, receiver, data, signature)
     {
         uint256 amountTaken = _handleSimpleNFTs(poolId, receiver, data);
 
