@@ -20,7 +20,7 @@ describe("Dispenser Provider tests", function () {
     let token: ERC20Token
     let lockDealNFT: LockDealNFT
     let dealProvider: DealProvider
-    let userData:IDispenserProvider.BuilderStruct
+    let userData: IDispenserProvider.BuilderStruct
     let usersData: IDispenserProvider.BuilderStruct[]
     let lockProvider: LockDealProvider
     let timedProvider: TimedDealProvider
@@ -116,7 +116,7 @@ describe("Dispenser Provider tests", function () {
         ).to.not.reverted
         await lockDealNFT.connect(user).setApprovalForAll(await owner.getAddress(), false)
     })
-
+    
     it("should revert double creation", async () => {
         const signatureData = [poolId, validTime, await user.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
@@ -161,6 +161,18 @@ describe("Dispenser Provider tests", function () {
         ).to.be.revertedWith("amount must be greater than 0")
     })
 
+    it("should emit PoolCreated event", async () => {
+        const signatureData = [poolId, validTime, await user.getAddress(), userData]
+        const signature = await createSignature(signer, signatureData)
+        await expect(
+            dispenserProvider
+                .connect(user)
+                .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+        )
+            .to.emit(dispenserProvider, "PoolCreated")
+            .withArgs(poolId + 1n, await lockProvider.getAddress())
+    })
+
     it("should emit TokensDispensed event", async () => {
         const signatureData = [poolId, validTime, await user.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
@@ -183,7 +195,7 @@ describe("Dispenser Provider tests", function () {
 
     it("should revert if params amount greater than leftAmount", async () => {
         userData = { simpleProvider: await lockProvider.getAddress(), params: [amount, validTime] }
-        usersData = [userData, userData]
+        const usersData = [userData, userData]
         const signatureData = [poolId, validTime, await user.getAddress(), userData, userData]
         const signature = await createSignature(signer, signatureData)
         await expect(
@@ -195,7 +207,7 @@ describe("Dispenser Provider tests", function () {
 
     it("should revert zero params amount", async () => {
         const invalidUserData = { simpleProvider: await lockProvider.getAddress(), params: [0, validTime] }
-        usersData = [userData, invalidUserData]
+        const usersData = [userData, invalidUserData]
         const signatureData = [poolId, validTime, await user.getAddress(), userData, invalidUserData]
         const signature = await createSignature(signer, signatureData)
         await expect(

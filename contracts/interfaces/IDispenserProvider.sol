@@ -35,7 +35,12 @@ interface IDispenserProvider is ISimpleProvider {
     /// @param user The address of the user receiving the tokens.
     /// @param amountTaken The amount of tokens dispensed from the pool.
     /// @param leftAmount The remaining amount of tokens in the pool after dispensation.
-    event TokensDispensed(uint256 poolId, address user, uint256 amountTaken, uint256 leftAmount);
+    event TokensDispensed(uint256 indexed poolId, address indexed user, uint256 amountTaken, uint256 leftAmount);
+
+    /// @notice Emitted when a new simple provider pool is created.
+    /// @param poolId The unique identifier for the pool.
+    /// @param provider The simple provider address.
+    event PoolCreated(uint256 indexed poolId, ISimpleProvider indexed provider);
 
     error CallerNotApproved(address caller, address receiver, uint256 poolId);
     error InvalidTime(uint256 currentTime, uint256 validUntil);

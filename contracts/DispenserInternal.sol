@@ -104,6 +104,7 @@ abstract contract DispenserInternal is DispenserState {
         poolId = lockDealNFT.mintForProvider(receiver, data.simpleProvider);
         data.simpleProvider.registerPool(poolId, data.params);
         lockDealNFT.cloneVaultId(poolId, tokenPoolId);
+        emit PoolCreated(poolId, data.simpleProvider);
     }
 
     /// @notice Withdraws tokens from the provider if the withdrawable amount is greater than zero.

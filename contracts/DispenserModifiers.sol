@@ -71,7 +71,6 @@ abstract contract DispenserModifiers is DispenserInternal {
     modifier IsUnclaimed(uint256 poolId, address receiver) {
         if (isTaken[poolId][receiver]) {
             revert TokensAlreadyTaken(poolId, receiver);
-        }
         _;
     }
 }
