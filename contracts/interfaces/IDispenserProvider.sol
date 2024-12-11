@@ -19,13 +19,13 @@ interface IDispenserProvider is ISimpleProvider {
     /// @dev Validates the provider, checks the signature, and processes the dispensation logic for the given pool.
     /// @param poolId The unique identifier for the pool.
     /// @param validUntil The timestamp until which the dispense is valid.
-    /// @param owner The address of the owner requesting to dispense tokens.
+    /// @param receiver The address of the user receiving the tokens.
     /// @param data The array of Builder structs containing provider and parameters data.
     /// @param signature The cryptographic signature verifying the validity of the transaction.
     function dispenseLock(
         uint256 poolId,
         uint256 validUntil,
-        address owner,
+        address receiver,
         Builder[] calldata data,
         bytes calldata signature
     ) external;
@@ -42,10 +42,10 @@ interface IDispenserProvider is ISimpleProvider {
     /// @param provider The simple provider address.
     event PoolCreated(uint256 indexed poolId, ISimpleProvider indexed provider);
 
-    error CallerNotApproved(address caller, address owner, uint256 poolId);
+    error CallerNotApproved(address caller, address receiver, uint256 poolId);
     error InvalidTime(uint256 currentTime, uint256 validUntil);
-    error InvalidSignature(uint256 poolId, address owner);
-    error TokensAlreadyTaken(uint256 poolId, address owner);
+    error InvalidSignature(uint256 poolId, address receiver);
+    error TokensAlreadyTaken(uint256 poolId, address receiver);
     error AmountMustBeGreaterThanZero();
     error NotEnoughTokensInPool(uint256 requestedAmount, uint256 availableAmount);
 }

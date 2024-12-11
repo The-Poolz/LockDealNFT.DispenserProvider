@@ -35,39 +35,39 @@ abstract contract DispenserInternal is DispenserState {
     /// @notice Handles the dispensation of simple NFTs from a token pool.
     /// @dev Iterates through all Builders, dispensing the NFTs and finalizing the deal.
     /// @param tokenPoolId The unique identifier for the token pool.
-    /// @param owner The address of the owner requesting to dispense tokens.
+    /// @param receiver The address of the user who will receive the dispensed tokens.
     /// @param data An array of Builder structs containing the necessary data for each NFT to be dispensed.
     /// @return amountTaken The total amount of tokens dispensed from the pool.
     /// `0x32aa97c4` - represent the bytes4(keccak256("_handleSimpleNFTs(uint256,address,(address,uint256[])[])"))
     function _handleSimpleNFTs(
         uint256 tokenPoolId,
-        address owner,
+        address receiver,
         Builder[] calldata data
     ) internal firewallProtectedSig(0x32aa97c4) returns (uint256 amountTaken) {
         for (uint256 i = 0; i < data.length; ++i) {
-            amountTaken += _nftIterator(tokenPoolId, owner, data[i]);
+            amountTaken += _nftIterator(tokenPoolId, receiver, data[i]);
         }
-        _finalizeDeal(tokenPoolId, owner, amountTaken);
+        _finalizeDeal(tokenPoolId, receiver, amountTaken);
     }
 
     /// @notice Iterates through the NFTs and dispenses them from the pool.
     /// @dev Ensures that the amount taken is greater than 0 and performs the necessary actions to create and withdraw NFTs.
     /// @param tokenPoolId The unique identifier for the token pool.
-    /// @param owner The address of the owner requesting to dispense tokens.
+    /// @param receiver The address of the user who will receive the dispensed tokens.
     /// @param data The Builder struct containing the data for the NFT to be dispensed.
     /// @return amountTaken The amount of tokens dispensed for this NFT.
     /// `0x592181eb` - represent the bytes4(keccak256("_nftIterator(uint256,address,(address,uint256[]))"))
     function _nftIterator(
         uint256 tokenPoolId,
-        address owner,
+        address receiver,
         Builder calldata data
     ) internal firewallProtectedSig(0x592181eb) returns (uint256 amountTaken) {
         amountTaken = data.params[0]; // calling function must check for an array of non-zero length
         if (amountTaken == 0) {
             revert AmountMustBeGreaterThanZero();
         }
-        uint256 poolId = _createSimpleNFT(tokenPoolId, owner, data);
-        if (lockDealNFT.isApprovedForAll(owner, address(this))) {
+        uint256 poolId = _createSimpleNFT(tokenPoolId, receiver, data);
+        if (lockDealNFT.isApprovedForAll(receiver, address(this))) {
             _withdrawIfAvailable(poolId);
         }
     }
@@ -75,33 +75,33 @@ abstract contract DispenserInternal is DispenserState {
     /// @notice Finalizes the deal by ensuring the dispensed amount does not exceed the available tokens in the pool.
     /// @dev Updates the pool amount and marks the transaction as completed for the owner.
     /// @param tokenPoolId The unique identifier for the token pool.
-    /// @param owner The address of the owner requesting to dispense tokens.
+    /// @param receiver The address of the user who will receive the dispensed tokens.
     /// @param amountTaken The total amount of tokens dispensed from the pool.
     /// `0x52f83cd6` - represent the bytes4(keccak256("_finalizeDeal(uint256,address,uint256)"))
     function _finalizeDeal(
         uint256 tokenPoolId,
-        address owner,
+        address receiver,
         uint256 amountTaken
     ) internal firewallProtectedSig(0x52f83cd6) {
         if (amountTaken > poolIdToAmount[tokenPoolId]) {
             revert NotEnoughTokensInPool(amountTaken, poolIdToAmount[tokenPoolId]);
         }
         poolIdToAmount[tokenPoolId] -= amountTaken;
-        isTaken[tokenPoolId][owner] = true;
+        isTaken[tokenPoolId][receiver] = true;
     }
 
     /// @notice Creates a simple NFT for a given pool and owner.
     /// @param tokenPoolId The unique identifier for the token pool.
-    /// @param owner The address of the owner requesting to mint the NFT.
+    /// @param receiver The address of the user who will receive the dispensed tokens.
     /// @param data The Builder struct containing the data for the NFT to be minted.
     /// @return poolId The unique identifier of the minted NFT.
     ///  `0xe64fbb17` - represent the bytes4(keccak256("_createSimpleNFT(uint256,address,(address,uint256[])))")
     function _createSimpleNFT(
         uint256 tokenPoolId,
-        address owner,
+        address receiver,
         Builder calldata data
     ) internal firewallProtectedSig(0xe64fbb17) returns (uint256 poolId) {
-        poolId = lockDealNFT.mintForProvider(owner, data.simpleProvider);
+        poolId = lockDealNFT.mintForProvider(receiver, data.simpleProvider);
         data.simpleProvider.registerPool(poolId, data.params);
         lockDealNFT.cloneVaultId(poolId, tokenPoolId);
         emit PoolCreated(poolId, data.simpleProvider);

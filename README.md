@@ -116,21 +116,25 @@ await dispenserProvider.createNewPool([ownerAddress, tokenAddress], params, crea
 `dispenseLock` function is responsible for dispensing tokens from a pool to the specified owner based on predefined rules. It ensures that the caller is authorized, the request is valid, and that the signature provided matches the expected one. This function handles simple NFTs and emits an event when tokens are dispensed.
 
 ```solidity
-    /**
-     * @dev Dispenses tokens from the pool to the specified owner.
-     * @param poolId The ID of the pool from which tokens are dispensed.
-     * @param validUntil The time until which the dispensation is valid.
-     * @param owner The address of the pool owner receiving the dispensed tokens.
-     * @param data An array of Builder structs containing the details of the NFTs to be handled.
-     * @param signature The signature of the pool owner authorizing the dispensation.
-     */
-function dispenseLock(
+    /// @notice Dispenses tokens from a locked pool based on provided data and signature.
+    /// If the pool owner intends to dispense tokens to himself, using the Withdraw 
+    /// or Split followed by Withdraw option is recommended. 
+    /// This function supports dispensing tokens to any address specified by the owner.
+    /// The signature provided is unique and can be used only once
+    /// @dev Validates the caller's approval, the signature, the availability of tokens, and the lock time before dispensing.
+    ///      If successful, it dispenses the tokens and emits an event.
+    /// @param poolId The unique identifier for the pool from which tokens will be dispensed.
+    /// @param validUntil The timestamp until which the transaction is valid. Must be greater than or equal to the current block time.
+    /// @param receiver The address of the user who will receive the dispensed tokens.
+    /// @param data An array of `Builder` structs containing the necessary data to perform the dispensing.
+    /// @param signature A cryptographic signature validating the request from the specified owner.
+    function dispenseLock(
         uint256 poolId,
         uint256 validUntil,
-        address owner,
+        address receiver,
         Builder[] calldata data,
         bytes calldata signature
-    ) external;
+    )
 ```
 
 ### TypeScript Example
