@@ -38,6 +38,7 @@ abstract contract DispenserInternal is DispenserState {
     /// @param owner The address of the owner requesting to dispense tokens.
     /// @param data An array of Builder structs containing the necessary data for each NFT to be dispensed.
     /// @return amountTaken The total amount of tokens dispensed from the pool.
+    /// `0x32aa97c4` - represent the bytes4(keccak256("_handleSimpleNFTs(uint256,address,(address,uint256[])[])"))
     function _handleSimpleNFTs(
         uint256 tokenPoolId,
         address owner,
@@ -55,6 +56,7 @@ abstract contract DispenserInternal is DispenserState {
     /// @param owner The address of the owner requesting to dispense tokens.
     /// @param data The Builder struct containing the data for the NFT to be dispensed.
     /// @return amountTaken The amount of tokens dispensed for this NFT.
+    /// `0x592181eb` - represent the bytes4(keccak256("_nftIterator(uint256,address,(address,uint256[]))"))
     function _nftIterator(
         uint256 tokenPoolId,
         address owner,
@@ -75,6 +77,7 @@ abstract contract DispenserInternal is DispenserState {
     /// @param tokenPoolId The unique identifier for the token pool.
     /// @param owner The address of the owner requesting to dispense tokens.
     /// @param amountTaken The total amount of tokens dispensed from the pool.
+    /// `0x52f83cd6` - represent the bytes4(keccak256("_finalizeDeal(uint256,address,uint256)"))
     function _finalizeDeal(
         uint256 tokenPoolId,
         address owner,
@@ -92,6 +95,7 @@ abstract contract DispenserInternal is DispenserState {
     /// @param owner The address of the owner requesting to mint the NFT.
     /// @param data The Builder struct containing the data for the NFT to be minted.
     /// @return poolId The unique identifier of the minted NFT.
+    ///  `0xe64fbb17` - represent the bytes4(keccak256("_createSimpleNFT(uint256,address,(address,uint256[])))")
     function _createSimpleNFT(
         uint256 tokenPoolId,
         address owner,
@@ -105,6 +109,7 @@ abstract contract DispenserInternal is DispenserState {
     /// @notice Withdraws tokens from the provider if the withdrawable amount is greater than zero.
     /// @dev Transfers the NFT token from its owner to the `lockDealNFT` contract if there is a withdrawable amount
     /// @param poolId The unique identifier for the pool to withdraw from.
+    /// `0xa7008a13`- represent bytes4(keccak256("_withdrawIfAvailable(uint256)"))
     function _withdrawIfAvailable(
         uint256 poolId
     ) internal firewallProtectedSig(0xa7008a13) {
