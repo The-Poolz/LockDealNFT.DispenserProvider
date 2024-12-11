@@ -14,6 +14,8 @@ contract DispenserProvider is DispenserModifiers {
     }
 
     /// @notice Dispenses tokens from a locked pool based on provided data and signature.
+    /// If the pool owner wants to dispense tokens from the pool, it is better to use the Withdraw option
+    /// or Split and then Withdraw option.
     /// @dev Validates the caller's approval, the signature, the availability of tokens, and the lock time before dispensing.
     ///      If successful, it dispenses the tokens and emits an event.
     /// @param poolId The unique identifier for the pool from which tokens will be dispensed.
