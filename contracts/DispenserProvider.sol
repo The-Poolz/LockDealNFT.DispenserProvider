@@ -14,6 +14,10 @@ contract DispenserProvider is DispenserModifiers {
     }
 
     /// @notice Dispenses tokens from a locked pool based on provided data and signature.
+    /// If the pool owner intends to dispense tokens to himself, using the Withdraw 
+    /// or Split followed by Withdraw option is recommended. 
+    /// This function supports dispensing tokens to any address specified by the owner.
+    /// The signature provided is unique and can be used only once
     /// @dev Validates the caller's approval, the signature, the availability of tokens, and the lock time before dispensing.
     ///      If successful, it dispenses the tokens and emits an event.
     /// @param poolId The unique identifier for the pool from which tokens will be dispensed.
