@@ -48,16 +48,17 @@ abstract contract DispenserModifiers is DispenserInternal {
         bytes calldata signature
     ) {
         if (
-            !_checkData(
-                poolId,
-                abi.encodePacked(
+            !(lockDealNFT.getData(poolId).owner == msg.sender ||
+                _checkData(
                     poolId,
-                    validUntil,
-                    owner,
-                    _encodeBuilder(data)
-                ),
-                signature
-            )
+                    abi.encodePacked(
+                        poolId,
+                        validUntil,
+                        owner,
+                        _encodeBuilder(data)
+                    ),
+                    signature
+                ))
         ) {
             revert InvalidSignature(poolId, owner);
         }
