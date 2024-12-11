@@ -18,29 +18,29 @@ contract DispenserProvider is DispenserModifiers {
     ///      If successful, it dispenses the tokens and emits an event.
     /// @param poolId The unique identifier for the pool from which tokens will be dispensed.
     /// @param validUntil The timestamp until which the transaction is valid. Must be greater than or equal to the current block time.
-    /// @param owner The address of the owner requesting to dispense tokens from the pool.
+    /// @param receiver The address of the user who will receive the dispensed tokens.
     /// @param data An array of `Builder` structs containing the necessary data to perform the dispensing.
     /// @param signature A cryptographic signature validating the request from the specified owner.
     function dispenseLock(
         uint256 poolId,
         uint256 validUntil,
-        address owner,
+        address receiver,
         Builder[] calldata data,
         bytes calldata signature
     )
         external
         firewallProtected
         validProviderId(poolId)
-        isCallerApproved(poolId, owner)
+        isCallerApproved(poolId, receiver)
         isValidTime(validUntil)
-        IsUnclaimed(poolId, owner)
-        isValidSignature(poolId, validUntil, owner, data, signature)
+        IsUnclaimed(poolId, receiver)
+        isValidSignature(poolId, validUntil, receiver, data, signature)
     {
-        uint256 amountTaken = _handleSimpleNFTs(poolId, owner, data);
+        uint256 amountTaken = _handleSimpleNFTs(poolId, receiver, data);
 
         emit TokensDispensed(
             poolId,
-            owner,
+            receiver,
             amountTaken,
             poolIdToAmount[poolId]
         );

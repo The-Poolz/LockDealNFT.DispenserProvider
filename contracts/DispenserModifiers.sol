@@ -9,15 +9,15 @@ abstract contract DispenserModifiers is DispenserInternal {
     /// @notice Ensures the caller is either the owner or an approved address for the specified pool.
     /// @dev Reverts with a `CallerNotApproved` error if the caller is not the owner or approved.
     /// @param poolId The ID of the pool to verify the caller’s approval for.
-    /// @param owner The address of the pool owner.
+    /// @param receiver The address of the receiver of the tokens.
     /// @dev Reverts if the caller is neither the owner nor approved by the owner.
-    modifier isCallerApproved(uint256 poolId, address owner) {
+    modifier isCallerApproved(uint256 poolId, address receiver) {
         if (
-            !(owner == msg.sender ||
+            !(receiver == msg.sender ||
                 lockDealNFT.ownerOf(poolId) == msg.sender ||
-                lockDealNFT.isApprovedForAll(owner, msg.sender))
+                lockDealNFT.isApprovedForAll(receiver, msg.sender))
         ) {
-            revert CallerNotApproved(msg.sender, owner, poolId);
+            revert CallerNotApproved(msg.sender, receiver, poolId);
         }
         _;
     }
@@ -37,13 +37,13 @@ abstract contract DispenserModifiers is DispenserInternal {
     /// @dev Reverts with an `InvalidSignature` error if the signature is not valid.
     /// @param poolId The pool ID for the dispensation.
     /// @param validUntil The timestamp until which the dispensation is valid.
-    /// @param owner The owner of the pool.
+    /// @param receiver The address of the receiver of the dispensation.
     /// @param data The data associated with the dispensation.
     /// @param signature The cryptographic signature to verify.
     modifier isValidSignature(
         uint256 poolId,
         uint256 validUntil,
-        address owner,
+        address receiver,
         Builder[] calldata data,
         bytes calldata signature
     ) {
@@ -53,13 +53,13 @@ abstract contract DispenserModifiers is DispenserInternal {
                 abi.encodePacked(
                     poolId,
                     validUntil,
-                    owner,
+                    receiver,
                     _encodeBuilder(data)
                 ),
                 signature
             )
         ) {
-            revert InvalidSignature(poolId, owner);
+            revert InvalidSignature(poolId, receiver);
         }
         _;
     }
@@ -67,10 +67,10 @@ abstract contract DispenserModifiers is DispenserInternal {
     /// @notice Ensures that the tokens have not already been taken for the specified pool and owner.
     /// @dev Reverts with a `TokensAlreadyTaken` error if tokens have already been dispensed for the given pool and owner.
     /// @param poolId The pool ID to check.
-    /// @param owner The owner to verify if tokens have already been dispensed.
-    modifier IsUnclaimed(uint256 poolId, address owner) {
-        if (isTaken[poolId][owner]) {
-            revert TokensAlreadyTaken(poolId, owner);
+    /// @param receiver The address of the receiver to check.
+    modifier IsUnclaimed(uint256 poolId, address receiver) {
+        if (isTaken[poolId][receiver]) {
+            revert TokensAlreadyTaken(poolId, receiver);
         }
         _;
     }
