@@ -14,8 +14,8 @@ abstract contract DispenserModifiers is DispenserInternal {
     modifier isAuthorized(uint256 poolId, address receiver) {
         if (
             !(  _isReceiver(receiver) ||
-                _isDispenserOwner(poolId) ||
-                _isApprovedFromReceiver(receiver))
+                _isPoolOwner(poolId) ||
+                _isApprovedByReceiver(receiver))
         ) {
             revert CallerNotApproved(msg.sender, receiver, poolId);
         }
@@ -81,15 +81,15 @@ abstract contract DispenserModifiers is DispenserInternal {
         return receiver == msg.sender;
     }
 
-    /// @notice Ensures that the caller is the owner of the dispenser.
+    /// @notice Ensures that the caller is the owner of the dispenser pool.
     /// @param poolId The pool Id to check.
-    function _isDispenserOwner(uint256 poolId) private view returns (bool) {
+    function _isPoolOwner(uint256 poolId) private view returns (bool) {
         return lockDealNFT.ownerOf(poolId) == msg.sender;
     }
 
     /// @notice Ensures that the caller is approved by the receiver.
     /// @param receiver The address of the receiver to check.
-    function _isApprovedFromReceiver(
+    function _isApprovedByReceiver(
         address receiver
     ) private view returns (bool) {
         return lockDealNFT.isApprovedForAll(receiver, msg.sender);
