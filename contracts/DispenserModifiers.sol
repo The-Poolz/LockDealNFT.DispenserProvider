@@ -10,7 +10,6 @@ abstract contract DispenserModifiers is DispenserInternal {
     /// @dev Reverts with a `CallerNotApproved` error if the caller is not receiver, owner or approved.
     /// @param poolId The ID of the pool to verify the caller’s approval for.
     /// @param receiver The address of the receiver of the tokens.
-    /// @dev Reverts if the caller is neither the owner nor approved by the owner.
     modifier isAuthorized(uint256 poolId, address receiver) {
         if (
             !(  _isReceiver(receiver) ||
