@@ -111,12 +111,13 @@ describe("Dispenser Provider tests", function () {
         expect(await token.balanceOf(await receiver.getAddress())).to.equal(beforeBalance)
     })
 
-    it("should create lock if approved for all", async () => {
+    it("should create a lock if the caller is approved by the receiver.", async () => {
         await lockDealNFT.connect(receiver).setApprovalForAll(await caller.getAddress(), true)
         const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
-        await expect(dispenserProvider.dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature))
-            .to.not.reverted
+        await expect(
+            dispenserProvider.dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+        ).to.not.reverted
         await lockDealNFT.connect(receiver).setApprovalForAll(await caller.getAddress(), false)
     })
 
@@ -140,11 +141,13 @@ describe("Dispenser Provider tests", function () {
         )
     })
 
-    it("should revert if sender is invalid", async () => {
+    it("should revert authorization if the caller is neither the owner, the receiver, nor approved by the receiver", async () => {
         const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
         await expect(
-            dispenserProvider.dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+            dispenserProvider
+                .connect(caller)
+                .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "CallerNotApproved")
     })
 
