@@ -220,4 +220,15 @@ describe("Dispenser Provider tests", function () {
                 .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "AmountMustBeGreaterThanZero")
     })
+
+    it("should allow the pool owner to call dispense for the receiver", async () => {
+        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
+        const signature = await createSignature(signer, signatureData)
+        const balanceBefore = await lockDealNFT["balanceOf(address)"](await receiver.getAddress())
+        await dispenserProvider
+            .connect(signer)
+            .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+        const balanceAfter = await lockDealNFT["balanceOf(address)"](await receiver.getAddress())
+        expect(balanceAfter).to.equal(balanceBefore + 1n)
+    })
 })
