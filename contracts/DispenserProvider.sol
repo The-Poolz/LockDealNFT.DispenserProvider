@@ -35,7 +35,7 @@ contract DispenserProvider is DispenserModifiers {
         external
         firewallProtected
         validProviderId(poolId)
-        isCallerApproved(poolId, receiver)
+        isAuthorized(poolId, receiver)
         isValidTime(validUntil)
         isUnclaimed(poolId, receiver)
         isValidSignature(poolId, validUntil, receiver, data, signature)

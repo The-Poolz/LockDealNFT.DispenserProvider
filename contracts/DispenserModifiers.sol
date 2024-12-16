@@ -6,16 +6,15 @@ import "./DispenserInternal.sol";
 /// @title DispenserModifiers
 /// @dev Contract for handling the revert logic during token dispensing operations in the Dispenser.
 abstract contract DispenserModifiers is DispenserInternal {
-    /// @notice Ensures the caller is either the owner or an approved address for the specified pool.
-    /// @dev Reverts with a `CallerNotApproved` error if the caller is not the owner or approved.
+    /// @notice Ensures that the caller is the receiver, owner, or approved by the receiver.
+    /// @dev Reverts with a `CallerNotApproved` error if the caller is not receiver, owner or approved.
     /// @param poolId The ID of the pool to verify the caller’s approval for.
     /// @param receiver The address of the receiver of the tokens.
-    /// @dev Reverts if the caller is neither the owner nor approved by the owner.
-    modifier isCallerApproved(uint256 poolId, address receiver) {
+    modifier isAuthorized(uint256 poolId, address receiver) {
         if (
-            !(receiver == msg.sender ||
-                lockDealNFT.ownerOf(poolId) == msg.sender ||
-                lockDealNFT.isApprovedForAll(receiver, msg.sender))
+            !(  _isReceiver(receiver) ||
+                _isPoolOwner(poolId) ||
+                _isApprovedByReceiver(receiver))
         ) {
             revert CallerNotApproved(msg.sender, receiver, poolId);
         }
@@ -73,5 +72,25 @@ abstract contract DispenserModifiers is DispenserInternal {
             revert TokensAlreadyTaken(poolId, receiver);
         }
         _;
+    }
+
+    /// @notice Ensures that the caller is the receiver.
+    /// @param receiver The address of the receiver to check.
+    function _isReceiver(address receiver) private view returns (bool) {
+        return receiver == msg.sender;
+    }
+
+    /// @notice Ensures that the caller is the owner of the dispenser pool.
+    /// @param poolId The pool Id to check.
+    function _isPoolOwner(uint256 poolId) private view returns (bool) {
+        return lockDealNFT.ownerOf(poolId) == msg.sender;
+    }
+
+    /// @notice Ensures that the caller is approved by the receiver.
+    /// @param receiver The address of the receiver to check.
+    function _isApprovedByReceiver(
+        address receiver
+    ) private view returns (bool) {
+        return lockDealNFT.isApprovedForAll(receiver, msg.sender);
     }
 }

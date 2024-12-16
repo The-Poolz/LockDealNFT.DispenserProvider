@@ -113,7 +113,9 @@ await dispenserProvider.createNewPool([ownerAddress, tokenAddress], params, crea
 
 ## Dispense Lock
 
-`dispenseLock` function is responsible for dispensing tokens from a pool to the specified owner based on predefined rules. It ensures that the caller is authorized, the request is valid, and that the signature provided matches the expected one. This function handles simple NFTs and emits an event when tokens are dispensed.
+`dispenseLock` function is responsible for dispensing tokens from a pool to the specified receiver based on predefined rules. It ensures that the caller is authorized, the request is valid, and that the signature provided matches the expected one. This function handles simple NFTs and emits an event when tokens are dispensed.
+
+To call this function, caller must have the pool owner's signature, be the recipient or an approved representative of the recipient, or the pool owner can call it on behalf of a specific user. Upon successful execution, the recipient will receive locked tokens from simple providers.
 
 ```solidity
     /// @notice Dispenses tokens from a locked pool based on provided data and signature.

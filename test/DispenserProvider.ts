@@ -13,8 +13,8 @@ import { ethers } from "hardhat"
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers"
 
 describe("Dispenser Provider tests", function () {
-    let owner: SignerWithAddress
-    let user: SignerWithAddress
+    let caller: SignerWithAddress
+    let receiver: SignerWithAddress
     let signer: SignerWithAddress
     let dispenserProvider: DispenserProvider
     let token: ERC20Token
@@ -34,7 +34,7 @@ describe("Dispenser Provider tests", function () {
     const ONE_DAY = 86400
 
     before(async () => {
-        [owner, user, signer] = await ethers.getSigners()
+        [caller, receiver, signer] = await ethers.getSigners()
         const VaultManagerFactory = await ethers.getContractFactory("MockVaultManager")
         vaultManager = (await VaultManagerFactory.deploy()) as VaultManager
         const LockDealNFTFactory = await ethers.getContractFactory("LockDealNFT")
@@ -60,7 +60,7 @@ describe("Dispenser Provider tests", function () {
         addresses = [await signer.getAddress(), await token.getAddress()]
         poolId = await lockDealNFT.totalSupply()
         await token.approve(await vaultManager.getAddress(), amount)
-        await dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
+        await dispenserProvider.createNewPool(addresses, params, creationSignature)
         validTime = (await time.latest()) + ONE_DAY
         userData = { simpleProvider: await lockProvider.getAddress(), params: [amount / 2n, validTime] }
         usersData = [userData]
@@ -75,114 +75,118 @@ describe("Dispenser Provider tests", function () {
     })
 
     it("should deacrease leftAmount after lock", async () => {
-        const signatureData = [poolId, validTime, await user.getAddress(), userData]
+        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
-        await dispenserProvider.connect(user).dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+        await dispenserProvider
+            .connect(receiver)
+            .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
         expect(await dispenserProvider.poolIdToAmount(poolId)).to.equal(amount / 2n)
     })
 
     it("should withdraw if available and disper approved", async () => {
-        await lockDealNFT.connect(user).setApprovalForAll(await dispenserProvider.getAddress(), true)
+        await lockDealNFT.connect(receiver).setApprovalForAll(await dispenserProvider.getAddress(), true)
         userData = { simpleProvider: await dealProvider.getAddress(), params: [amount] }
         usersData = [userData]
-        const signatureData = [poolId, validTime, await user.getAddress(), userData]
+        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
-        const beforeBalance = await token.balanceOf(await user.getAddress())
-        await dispenserProvider.connect(user).dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+        const beforeBalance = await token.balanceOf(await receiver.getAddress())
+        await dispenserProvider
+            .connect(receiver)
+            .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
         // check if user has tokens after the withdraw
-        expect(await token.balanceOf(await user.getAddress())).to.equal(beforeBalance + amount)
-        await lockDealNFT.connect(user).setApprovalForAll(await dispenserProvider.getAddress(), false)
+        expect(await token.balanceOf(await receiver.getAddress())).to.equal(beforeBalance + amount)
+        await lockDealNFT.connect(receiver).setApprovalForAll(await dispenserProvider.getAddress(), false)
     })
 
     it("should not withdraw if dispenser not approved", async () => {
         userData = { simpleProvider: await dealProvider.getAddress(), params: [amount] }
         usersData = [userData]
-        const signatureData = [poolId, validTime, await user.getAddress(), userData]
+        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
-        const beforeBalance = await token.balanceOf(await user.getAddress())
-        await dispenserProvider.connect(user).dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+        const beforeBalance = await token.balanceOf(await receiver.getAddress())
+        await dispenserProvider
+            .connect(receiver)
+            .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
         // check if user doesn't have tokens after the withdraw
-        expect(await token.balanceOf(await user.getAddress())).to.equal(beforeBalance)
+        expect(await token.balanceOf(await receiver.getAddress())).to.equal(beforeBalance)
     })
 
-    it("should create lock if approved for all", async () => {
-        await lockDealNFT.connect(user).setApprovalForAll(await owner.getAddress(), true)
-        const signatureData = [poolId, validTime, await user.getAddress(), userData]
+    it("should create a lock if the caller is approved by the receiver.", async () => {
+        await lockDealNFT.connect(receiver).setApprovalForAll(await caller.getAddress(), true)
+        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
         await expect(
-            dispenserProvider
-                .connect(owner)
-                .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+            dispenserProvider.dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
         ).to.not.reverted
-        await lockDealNFT.connect(user).setApprovalForAll(await owner.getAddress(), false)
+        await lockDealNFT.connect(receiver).setApprovalForAll(await caller.getAddress(), false)
     })
-    
+
     it("should revert double creation", async () => {
-        const signatureData = [poolId, validTime, await user.getAddress(), userData]
+        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
         await dispenserProvider
-            .connect(user)
-            .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+            .connect(receiver)
+            .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
         await expect(
             dispenserProvider
-                .connect(user)
-                .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+                .connect(receiver)
+                .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "TokensAlreadyTaken")
     })
 
     it("should revert invalid signer address", async () => {
         addresses = [ethers.ZeroAddress, await token.getAddress()]
-        await expect(
-            dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
-        ).to.be.revertedWith("Zero Address is not allowed")
+        await expect(dispenserProvider.createNewPool(addresses, params, creationSignature)).to.be.revertedWith(
+            "Zero Address is not allowed"
+        )
     })
 
-    it("should revert if sender is invalid", async () => {
-        const signatureData = [poolId, validTime, await user.getAddress(), userData]
+    it("should revert authorization if the caller is neither the owner, the receiver, nor approved by the receiver", async () => {
+        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
         await expect(
             dispenserProvider
-                .connect(owner)
-                .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+                .connect(caller)
+                .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "CallerNotApproved")
     })
 
     it("should revert zero token address", async () => {
         addresses = [await signer.getAddress(), ethers.ZeroAddress]
-        await expect(
-            dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
-        ).to.be.revertedWith("Zero Address is not allowed")
+        await expect(dispenserProvider.createNewPool(addresses, params, creationSignature)).to.be.revertedWith(
+            "Zero Address is not allowed"
+        )
     })
 
     it("should revert invalid amount", async () => {
         params = [0n]
-        await expect(
-            dispenserProvider.connect(owner).createNewPool(addresses, params, creationSignature)
-        ).to.be.revertedWith("amount must be greater than 0")
+        await expect(dispenserProvider.createNewPool(addresses, params, creationSignature)).to.be.revertedWith(
+            "amount must be greater than 0"
+        )
     })
 
     it("should emit PoolCreated event", async () => {
-        const signatureData = [poolId, validTime, await user.getAddress(), userData]
+        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
         await expect(
             dispenserProvider
-                .connect(user)
-                .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+                .connect(receiver)
+                .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
         )
             .to.emit(dispenserProvider, "PoolCreated")
             .withArgs(poolId + 1n, await lockProvider.getAddress())
     })
 
     it("should emit TokensDispensed event", async () => {
-        const signatureData = [poolId, validTime, await user.getAddress(), userData]
+        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
         const signature = await createSignature(signer, signatureData)
         await expect(
             dispenserProvider
-                .connect(user)
-                .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+                .connect(receiver)
+                .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
         )
             .to.emit(dispenserProvider, "TokensDispensed")
-            .withArgs(poolId, await user.getAddress(), amount / 2n, amount / 2n)
+            .withArgs(poolId, await receiver.getAddress(), amount / 2n, amount / 2n)
     })
 
     it("should support IERC165 interface", async () => {
@@ -196,24 +200,35 @@ describe("Dispenser Provider tests", function () {
     it("should revert if params amount greater than leftAmount", async () => {
         userData = { simpleProvider: await lockProvider.getAddress(), params: [amount, validTime] }
         const usersData = [userData, userData]
-        const signatureData = [poolId, validTime, await user.getAddress(), userData, userData]
+        const signatureData = [poolId, validTime, await receiver.getAddress(), userData, userData]
         const signature = await createSignature(signer, signatureData)
         await expect(
             dispenserProvider
-                .connect(user)
-                .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+                .connect(receiver)
+                .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "NotEnoughTokensInPool")
     })
 
     it("should revert zero params amount", async () => {
         const invalidUserData = { simpleProvider: await lockProvider.getAddress(), params: [0, validTime] }
         const usersData = [userData, invalidUserData]
-        const signatureData = [poolId, validTime, await user.getAddress(), userData, invalidUserData]
+        const signatureData = [poolId, validTime, await receiver.getAddress(), userData, invalidUserData]
         const signature = await createSignature(signer, signatureData)
         await expect(
             dispenserProvider
-                .connect(user)
-                .dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+                .connect(receiver)
+                .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "AmountMustBeGreaterThanZero")
+    })
+
+    it("should allow the pool owner to call dispense for the receiver", async () => {
+        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
+        const signature = await createSignature(signer, signatureData)
+        const balanceBefore = await lockDealNFT["balanceOf(address)"](await receiver.getAddress())
+        await dispenserProvider
+            .connect(signer)
+            .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+        const balanceAfter = await lockDealNFT["balanceOf(address)"](await receiver.getAddress())
+        expect(balanceAfter).to.equal(balanceBefore + 1n)
     })
 })
