@@ -11,6 +11,7 @@
 
 -   [Installation](#installation)
 -   [Overview](#overview)
+-   [Use case](#use-case)
 -   [UML](#contracts-diagram)
 -   [Create Dispenser pool](#create-dispenser-pool)
 -   [Dispense Lock](#dispense-lock)
@@ -61,6 +62,25 @@ The `DispenserProvider` contract manages token dispensing in collaboration with 
 -   **Token Dispensing:** Locks tokens for a specified recipient using a signature-based authorization.
 -   **Integration with Multiple Providers:** Works with other provider contracts like LockDealProvider, DealProvider, and TimedDealProvider.
 -   **Events and Notifications:** Emits events for tracking token distributions and errors.
+
+## Use case
+Every **IDO** goes through three stages:
+
+1. **Registration.**
+2. **Participation.**
+3. **Token Distribution.**
+
+**Dispenser Provider** is responsible for the third stage: **Token Distribution**.
+
+Currently, the **Registration** stage is managed by the **Backend**, which sends a verification signature for registration to the **IDO**. When users decide to participate and have already registered, they need to purchase **IDO** tokens during the **Participation** stage. At this point, the [**InvestProvider**](https://github.com/The-Poolz/LockDealNFT.InvestProvider) contract takes action.
+
+After the **Participation** stage, the **project owner** receives a list of participants along with their investment information. Based on this data, the total supply of required **IDO** tokens is calculated. The **project owner** then creates a new **dispenser pool** with this total amount, which will be used for distribution.
+
+Every user who has registered and participated in the **IDO** can obtain a signature from the **Backend**, containing data related to their token distribution. The signature is valid for a limited time, can only be used once, and users cannot request multiple signatures. When the **User** receives the signature, they can claim **IDO** tokens using it. As a result, after the `dispenseLock` call, the receiver will receive locked tokens based on the **IDO** conditions.
+
+![DispenserProvider_-_use_case](https://github.com/user-attachments/assets/0cbaef4f-cb9f-4b50-84cc-06cc90e9c987)
+
+_This picture illustrates the relationships between actors and processes._
 
 ## Contracts diagram
 
