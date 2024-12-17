@@ -48,4 +48,5 @@ interface IDispenserProvider is ISimpleProvider {
     error TokensAlreadyTaken(uint256 poolId, address receiver);
     error AmountMustBeGreaterThanZero();
     error NotEnoughTokensInPool(uint256 requestedAmount, uint256 availableAmount);
+    error ZeroParamsLength();
 }

@@ -13,6 +13,11 @@ abstract contract DispenserInternal is DispenserState {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
+    modifier notZeroValue(uint256 value) {
+        if (value == 0) revert AmountMustBeGreaterThanZero();
+        _;
+    }
+
     /// @notice Encodes an array of Builder structs into a single byte array.
     /// @param builder An array of Builder structs to be encoded.
     /// @return data The encoded byte array representing the Builders.
@@ -45,6 +50,7 @@ abstract contract DispenserInternal is DispenserState {
         Builder[] calldata data
     ) internal firewallProtectedSig(0x32aa97c4) returns (uint256 amountTaken) {
         for (uint256 i = 0; i < data.length; ++i) {
+            if (data[i].params.length == 0) revert ZeroParamsLength();
             amountTaken += _nftIterator(tokenPoolId, receiver, data[i]);
         }
         _finalizeDeal(tokenPoolId, receiver, amountTaken);
@@ -61,11 +67,8 @@ abstract contract DispenserInternal is DispenserState {
         uint256 tokenPoolId,
         address receiver,
         Builder calldata data
-    ) internal firewallProtectedSig(0x592181eb) returns (uint256 amountTaken) {
-        amountTaken = data.params[0]; // calling function must check for an array of non-zero length
-        if (amountTaken == 0) {
-            revert AmountMustBeGreaterThanZero();
-        }
+    ) internal firewallProtectedSig(0x592181eb) notZeroValue(data.params[0]) returns (uint256 amountTaken) {
+        amountTaken = data.params[0];
         uint256 poolId = _createSimpleNFT(tokenPoolId, receiver, data);
         if (lockDealNFT.isApprovedForAll(receiver, address(this))) {
             _withdrawIfAvailable(poolId);

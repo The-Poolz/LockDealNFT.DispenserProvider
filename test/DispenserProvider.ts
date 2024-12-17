@@ -231,4 +231,16 @@ describe("Dispenser Provider tests", function () {
         const balanceAfter = await lockDealNFT["balanceOf(address)"](await receiver.getAddress())
         expect(balanceAfter).to.equal(balanceBefore + 1n)
     })
+
+    it("should revert if the parameters length is zero", async () => {
+        const userData = { simpleProvider: await lockProvider.getAddress(), params: [] }
+        const usersData = [userData]
+        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
+        const signature = await createSignature(signer, signatureData)
+        await expect(
+            dispenserProvider
+                .connect(receiver)
+                .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+        ).to.be.revertedWithCustomError(dispenserProvider, "ZeroParamsLength")
+    })
 })
