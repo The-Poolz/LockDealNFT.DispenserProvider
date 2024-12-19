@@ -53,7 +53,6 @@ abstract contract DispenserInternal is DispenserState {
             if (data[i].params.length == 0) revert ZeroParamsLength();
             amountTaken += _nftIterator(tokenPoolId, receiver, data[i]);
         }
-        _finalizeDeal(tokenPoolId, receiver, amountTaken);
     }
 
     /// @notice Iterates through the NFTs and dispenses them from the pool.
