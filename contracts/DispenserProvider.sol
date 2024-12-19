@@ -41,6 +41,7 @@ contract DispenserProvider is DispenserModifiers {
         isValidSignature(poolId, validUntil, receiver, data, signature)
     {
         uint256 amountTaken = _handleSimpleNFTs(poolId, receiver, data);
+        _finalizeDeal(poolId, receiver, amountTaken);
 
         emit TokensDispensed(
             poolId,
