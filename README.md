@@ -64,6 +64,7 @@ The `DispenserProvider` contract manages token dispensing in collaboration with 
 -   **Events and Notifications:** Emits events for tracking token distributions and errors.
 
 ## Use case
+
 Every **IDO** goes through three stages:
 
 1. **Registration.**
@@ -76,7 +77,9 @@ Currently, the **Registration** stage is managed by the **Backend**, which sends
 
 After the **Participation** stage, the **project owner** receives a list of participants along with their investment information. Based on this data, the total supply of required **IDO** tokens is calculated. The **project owner** then creates a new **dispenser pool** with this total amount, which will be used for distribution.
 
-Every user who has registered and participated in the **IDO** can obtain a signature from the **Backend**, containing data related to their token distribution. The signature is valid for a limited time, can only be used once, and users cannot request multiple signatures. When the **User** receives the signature, they can claim **IDO** tokens using it. As a result, after the `dispenseLock` call, the receiver will receive locked tokens based on the **IDO** conditions.
+Every user who has registered and participated in the **IDO** can obtain a signature from the **Backend**, containing data related to their token distribution. The signature is valid for a limited time, can only be used once, and users cannot request multiple signatures. The signature may be public. Even if someone else obtains the signature, they cannot use it on their behalf. The signature is bound to the intended recipient, ensuring that only the rightful user can claim the associated tokens. Additionally, the receiver has the option to delegate the `dispenseLock` call to an approved address.
+
+When the **User** receives the signature, they can claim **IDO** tokens using it. As a result, after the `dispenseLock` call, the receiver will receive locked tokens based on the **IDO** conditions.
 
 ![DispenserProvider_-_use_case](https://github.com/user-attachments/assets/0cbaef4f-cb9f-4b50-84cc-06cc90e9c987)
 
@@ -139,8 +142,8 @@ To call this function, caller must have the pool owner's signature, be the recip
 
 ```solidity
     /// @notice Dispenses tokens from a locked pool based on provided data and signature.
-    /// If the pool owner intends to dispense tokens to himself, using the Withdraw 
-    /// or Split followed by Withdraw option is recommended. 
+    /// If the pool owner intends to dispense tokens to himself, using the Withdraw
+    /// or Split followed by Withdraw option is recommended.
     /// This function supports dispensing tokens to any address specified by the owner.
     /// The signature provided is unique and can be used only once
     /// @dev Validates the caller's approval, the signature, the availability of tokens, and the lock time before dispensing.
