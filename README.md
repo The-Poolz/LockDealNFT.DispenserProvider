@@ -7,6 +7,9 @@
 
 **DispenserProvider** contract is part of a system designed to manage and dispense tokens from a pool in response to approved requests. It allows creating token pools and locking tokens for distribution according to predefined conditions
 
+### Audit report
+The audit report is available here: [Audit Report](https://docs.google.com/document/d/1jOZR6fjlFECY7Or9taxpsHXea8OQwgHGA5R3yQumuMQ/edit?tab=t.0)
+
 ### Navigation
 
 -   [Installation](#installation)
