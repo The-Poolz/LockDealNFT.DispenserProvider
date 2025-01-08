@@ -9,7 +9,7 @@ import "./DispenserModifiers.sol";
 ///      It allows users to dispense locked tokens from a specified pool after passing multiple validation checks.
 contract DispenserProvider is DispenserModifiers {
     /// @param _lockDealNFT The address of the `ILockDealNFT` contract, which is used for handling NFT minting and vault management.
-    constructor(ILockDealNFT _lockDealNFT) DealProvider(_lockDealNFT) {
+    constructor(ILockDealNFT _lockDealNFT) DealProvider(_lockDealNFT) EIP712("DispenserProvider", "1") {
         name = "DispenserProvider";
     }
 

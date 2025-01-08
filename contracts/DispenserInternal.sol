@@ -2,16 +2,15 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "./DispenserState.sol";
 
 /// @title DispenserInternal
 /// @dev Abstract contract that implements the logic for handling token dispensing and NFT management.
 ///      This contract is responsible for encoding builder data, handling simple NFTs, and ensuring the correct
 ///      amount of tokens are dispensed from the pool.
-abstract contract DispenserInternal is DispenserState {
+abstract contract DispenserInternal is DispenserState, EIP712 {
     using ECDSA for bytes32;
-    using MessageHashUtils for bytes32;
 
     modifier notZeroValue(uint256 value) {
         if (value == 0) revert AmountMustBeGreaterThanZero();
@@ -132,6 +131,8 @@ abstract contract DispenserInternal is DispenserState {
         bytes memory data,
         bytes calldata signature
     ) internal view returns (bool) {
-        return keccak256(data).toEthSignedMessageHash().recover(signature) == lockDealNFT.getData(poolId).owner;
+        bytes32 hash = _hashTypedDataV4(keccak256(data));
+        address signer = ECDSA.recover(hash, signature);
+        return signer == lockDealNFT.getData(poolId).owner;
     }
 }
