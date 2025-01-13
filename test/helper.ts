@@ -46,7 +46,7 @@ export async function createEIP712Signature(
             { name: "simpleProvider", type: "address" },
             { name: "params", type: "uint256[]" },
         ],
-        SigStruct: [
+        MessageStruct: [
             { name: "data", type: "Builder[]" },
             { name: "poolId", type: "uint256" },
             { name: "receiver", type: "address" },

@@ -14,7 +14,7 @@ interface IDispenserProvider is ISimpleProvider {
         ISimpleProvider simpleProvider;
         uint256[] params;
     }
-    struct SigStruct {
+    struct MessageStruct {
         Builder[] data;
         uint256 poolId;
         address receiver;
@@ -22,7 +22,7 @@ interface IDispenserProvider is ISimpleProvider {
     }
 
     function dispenseLock(
-        SigStruct calldata sigData,
+        MessageStruct calldata sigData,
         bytes calldata signature
     ) external;
 

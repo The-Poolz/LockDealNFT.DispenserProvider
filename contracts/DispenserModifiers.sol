@@ -35,23 +35,23 @@ abstract contract DispenserModifiers is DispenserInternal {
     /// @notice Validates the signature provided for the dispense action.
     /// @dev Reverts with an `InvalidSignature` error if the signature is not valid.
     modifier isValidSignature(
-        SigStruct calldata sigData,
+        MessageStruct calldata message,
         bytes calldata signature
     ) {
         if (
             !_checkData(
-                sigData.poolId,
+                message.poolId,
                 abi.encodePacked(
                     MESSAGE_TYPEHASH,
-                    keccak256(abi.encodePacked(_encodeBuilder(sigData.data))),
-                    sigData.poolId,
-                    abi.encode(sigData.receiver),
-                    sigData.validUntil
+                    keccak256(abi.encodePacked(_encodeBuilder(message.data))),
+                    message.poolId,
+                    abi.encode(message.receiver),
+                    message.validUntil
                 ),
                 signature
             )
         ) {
-            revert InvalidSignature(sigData.poolId, sigData.receiver);
+            revert InvalidSignature(message.poolId, message.receiver);
         }
         _;
     }

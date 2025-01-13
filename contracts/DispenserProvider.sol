@@ -23,25 +23,25 @@ contract DispenserProvider is DispenserModifiers {
     /// @dev Validates the caller's approval, the signature, the availability of tokens, and the lock time before dispensing.
     ///      If successful, it dispenses the tokens and emits an event.
     function dispenseLock(
-        SigStruct calldata sigData,
+        MessageStruct calldata message,
         bytes calldata signature
     )
         external
         firewallProtected
-        validProviderId(sigData.poolId)
-        isAuthorized(sigData.poolId, sigData.receiver)
-        isValidTime(sigData.validUntil)
-        isUnclaimed(sigData.poolId, sigData.receiver)
-        isValidSignature(sigData, signature)
+        validProviderId(message.poolId)
+        isAuthorized(message.poolId, message.receiver)
+        isValidTime(message.validUntil)
+        isUnclaimed(message.poolId, message.receiver)
+        isValidSignature(message, signature)
     {
-        uint256 amountTaken = _handleSimpleNFTs(sigData.poolId, sigData.receiver, sigData.data);
-        _finalizeDeal(sigData.poolId, sigData.receiver, amountTaken);
+        uint256 amountTaken = _handleSimpleNFTs(message.poolId, message.receiver, message.data);
+        _finalizeDeal(message.poolId, message.receiver, amountTaken);
 
         emit TokensDispensed(
-            sigData.poolId,
-            sigData.receiver,
+            message.poolId,
+            message.receiver,
             amountTaken,
-            poolIdToAmount[sigData.poolId]
+            poolIdToAmount[message.poolId]
         );
     }
 
