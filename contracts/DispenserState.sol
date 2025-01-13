@@ -13,5 +13,11 @@ abstract contract DispenserState is IDispenserProvider, DealProvider {
     /// @return bool The claim status of the user in the pool.
     mapping(uint256 => mapping(address => bool)) public isTaken;
 
-    bytes4 public constant _INTERFACE_ID_DISPENSER_PROVIDER = type(IDispenserProvider).interfaceId;
+    bytes32 MESSAGE_TYPEHASH =
+        keccak256(
+            "SigStruct(Builder[] data,uint256 poolId,address receiver,uint256 validUntil)Builder(address simpleProvider,uint256[] params)"
+        );
+
+    bytes32 private BUILDER_TYPEHASH =
+        keccak256("Builder(address simpleProvider,uint256[] params)");
 }
