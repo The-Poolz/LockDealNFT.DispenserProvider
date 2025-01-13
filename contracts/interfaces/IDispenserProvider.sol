@@ -14,19 +14,15 @@ interface IDispenserProvider is ISimpleProvider {
         ISimpleProvider simpleProvider;
         uint256[] params;
     }
+    struct SigStruct {
+        Builder[] data;
+        uint256 poolId;
+        address receiver;
+        uint256 validUntil;
+    }
 
-    /// @notice Dispenses tokens from the pool to the specified user.
-    /// @dev Validates the provider, checks the signature, and processes the dispensation logic for the given pool.
-    /// @param poolId The unique identifier for the pool.
-    /// @param validUntil The timestamp until which the dispense is valid.
-    /// @param receiver The address of the user receiving the tokens.
-    /// @param data The array of Builder structs containing provider and parameters data.
-    /// @param signature The cryptographic signature verifying the validity of the transaction.
     function dispenseLock(
-        uint256 poolId,
-        uint256 validUntil,
-        address receiver,
-        Builder[] calldata data,
+        SigStruct calldata sigData,
         bytes calldata signature
     ) external;
 

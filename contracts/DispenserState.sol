@@ -12,4 +12,6 @@ abstract contract DispenserState is IDispenserProvider, DealProvider {
     ///      Returns `true` if the user has already taken tokens from the pool, otherwise `false`.
     /// @return bool The claim status of the user in the pool.
     mapping(uint256 => mapping(address => bool)) public isTaken;
+
+    bytes4 public constant _INTERFACE_ID_DISPENSER_PROVIDER = type(IDispenserProvider).interfaceId;
 }

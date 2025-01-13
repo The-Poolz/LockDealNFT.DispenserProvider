@@ -12,6 +12,9 @@ import "./DispenserState.sol";
 abstract contract DispenserInternal is DispenserState, EIP712 {
     using ECDSA for bytes32;
 
+    bytes32 private BUILDER_TYPEHASH =
+        keccak256("Builder(address simpleProvider,uint256[] params)");
+
     modifier notZeroValue(uint256 value) {
         if (value == 0) revert AmountMustBeGreaterThanZero();
         _;
@@ -19,21 +22,21 @@ abstract contract DispenserInternal is DispenserState, EIP712 {
 
     /// @notice Encodes an array of Builder structs into a single byte array.
     /// @param builder An array of Builder structs to be encoded.
-    /// @return data The encoded byte array representing the Builders.
+    /// @return builderData An array of bytes32 values representing the encoded builders.
     function _encodeBuilder(
         Builder[] calldata builder
-    ) internal pure returns (bytes memory data) {
+    ) internal view returns (bytes32[] memory builderData) {
+        builderData = new bytes32[](builder.length);
         for (uint256 i = 0; i < builder.length; ++i) {
-            data = _encodeBuilder(builder[i], data);
+            builderData[i] = _encodeBuilder(builder[i]);
         }
     }
 
     /// @notice Encodes a single Builder struct into a byte array.
     /// @param builder A single Builder struct to be encoded.
-    /// @param data The byte array to which the encoded builder will be appended.
     /// @return The updated byte array after encoding the builder.
-    function _encodeBuilder(Builder calldata builder, bytes memory data) internal pure returns(bytes memory) {
-        return abi.encodePacked(data, address(builder.simpleProvider), builder.params);
+    function _encodeBuilder(Builder calldata builder) internal view returns(bytes32) {
+        return keccak256(abi.encode(BUILDER_TYPEHASH, builder.simpleProvider, keccak256(abi.encodePacked(builder.params))));
     }
 
     /// @notice Handles the dispensation of simple NFTs from a token pool.

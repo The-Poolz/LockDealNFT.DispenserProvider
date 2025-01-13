@@ -6,13 +6,18 @@ import "./DispenserInternal.sol";
 /// @title DispenserModifiers
 /// @dev Contract for handling the revert logic during token dispensing operations in the Dispenser.
 abstract contract DispenserModifiers is DispenserInternal {
+    bytes32 MESSAGE_TYPEHASH =
+        keccak256(
+            "SigStruct(Builder[] data,uint256 poolId,address receiver,uint256 validUntil)Builder(address simpleProvider,uint256[] params)"
+        );
+
     /// @notice Ensures that the caller is the receiver, owner, or approved by the receiver.
     /// @dev Reverts with a `CallerNotApproved` error if the caller is not receiver, owner or approved.
     /// @param poolId The ID of the pool to verify the caller’s approval for.
     /// @param receiver The address of the receiver of the tokens.
     modifier isAuthorized(uint256 poolId, address receiver) {
         if (
-            !(  _isReceiver(receiver) ||
+            !(_isReceiver(receiver) ||
                 _isPoolOwner(poolId) ||
                 _isApprovedByReceiver(receiver))
         ) {
@@ -34,31 +39,24 @@ abstract contract DispenserModifiers is DispenserInternal {
 
     /// @notice Validates the signature provided for the dispense action.
     /// @dev Reverts with an `InvalidSignature` error if the signature is not valid.
-    /// @param poolId The pool ID for the dispensation.
-    /// @param validUntil The timestamp until which the dispensation is valid.
-    /// @param receiver The address of the receiver of the dispensation.
-    /// @param data The data associated with the dispensation.
-    /// @param signature The cryptographic signature to verify.
     modifier isValidSignature(
-        uint256 poolId,
-        uint256 validUntil,
-        address receiver,
-        Builder[] calldata data,
+        SigStruct calldata sigData,
         bytes calldata signature
     ) {
         if (
             !_checkData(
-                poolId,
+                sigData.poolId,
                 abi.encodePacked(
-                    poolId,
-                    validUntil,
-                    receiver,
-                    _encodeBuilder(data)
+                    MESSAGE_TYPEHASH,
+                    keccak256(abi.encodePacked(_encodeBuilder(sigData.data))),
+                    sigData.poolId,
+                    abi.encode(sigData.receiver),
+                    sigData.validUntil
                 ),
                 signature
             )
         ) {
-            revert InvalidSignature(poolId, receiver);
+            revert InvalidSignature(sigData.poolId, sigData.receiver);
         }
         _;
     }

@@ -8,7 +8,7 @@ import { TimedDealProvider } from "../typechain-types/@poolzfinance/lockdeal-nft
 import { IDispenserProvider } from "../typechain-types/contracts/DispenserProvider"
 import { time } from "@nomicfoundation/hardhat-network-helpers"
 import { expect } from "chai"
-import { createSignature } from "./helper"
+import { createSignature, createEIP712Signature } from "./helper"
 import { ethers } from "hardhat"
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers"
 
@@ -32,6 +32,7 @@ describe("Dispenser Provider tests", function () {
     const creationSignature: Uint8Array = ethers.toUtf8Bytes("signature")
     const amount = ethers.parseUnits("10", 18)
     const ONE_DAY = 86400
+    let signatureData: IDispenserProvider.SigStructStruct
 
     before(async () => {
         [caller, receiver, signer] = await ethers.getSigners()
@@ -64,6 +65,12 @@ describe("Dispenser Provider tests", function () {
         validTime = (await time.latest()) + ONE_DAY
         userData = { simpleProvider: await lockProvider.getAddress(), params: [amount / 2n, validTime] }
         usersData = [userData]
+        signatureData = {
+            data: usersData,
+            poolId: poolId,
+            receiver: await receiver.getAddress(),
+            validUntil: validTime,
+        }
     })
 
     it("should return name of contract", async () => {
@@ -75,11 +82,16 @@ describe("Dispenser Provider tests", function () {
     })
 
     it("should deacrease leftAmount after lock", async () => {
-        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
-        const signature = await createSignature(signer, signatureData)
-        await dispenserProvider
-            .connect(receiver)
-            .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+        // Create EIP-712 signature
+        const signature = await createEIP712Signature(
+            poolId,
+            await receiver.getAddress(), // Use the resolved address here as well
+            validTime,
+            signer,
+            await dispenserProvider.getAddress(),
+            usersData
+        )
+        await dispenserProvider.connect(receiver).dispenseLock(signatureData, signature)
         expect(await dispenserProvider.poolIdToAmount(poolId)).to.equal(amount / 2n)
     })
 
@@ -87,12 +99,17 @@ describe("Dispenser Provider tests", function () {
         await lockDealNFT.connect(receiver).setApprovalForAll(await dispenserProvider.getAddress(), true)
         userData = { simpleProvider: await dealProvider.getAddress(), params: [amount] }
         usersData = [userData]
-        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
-        const signature = await createSignature(signer, signatureData)
+        const signature = await createEIP712Signature(
+            poolId,
+            await receiver.getAddress(), // Use the resolved address here as well
+            validTime,
+            signer,
+            await dispenserProvider.getAddress(),
+            usersData
+        )
+        signatureData.data = usersData
         const beforeBalance = await token.balanceOf(await receiver.getAddress())
-        await dispenserProvider
-            .connect(receiver)
-            .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+        await dispenserProvider.connect(receiver).dispenseLock(signatureData, signature)
         // check if user has tokens after the withdraw
         expect(await token.balanceOf(await receiver.getAddress())).to.equal(beforeBalance + amount)
         await lockDealNFT.connect(receiver).setApprovalForAll(await dispenserProvider.getAddress(), false)
@@ -101,36 +118,47 @@ describe("Dispenser Provider tests", function () {
     it("should not withdraw if dispenser not approved", async () => {
         userData = { simpleProvider: await dealProvider.getAddress(), params: [amount] }
         usersData = [userData]
-        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
-        const signature = await createSignature(signer, signatureData)
+        const signature = await createEIP712Signature(
+            poolId,
+            await receiver.getAddress(), // Use the resolved address here as well
+            validTime,
+            signer,
+            await dispenserProvider.getAddress(),
+            usersData
+        )
+        signatureData.data = usersData
         const beforeBalance = await token.balanceOf(await receiver.getAddress())
-        await dispenserProvider
-            .connect(receiver)
-            .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+        await dispenserProvider.connect(receiver).dispenseLock(signatureData, signature)
         // check if user doesn't have tokens after the withdraw
         expect(await token.balanceOf(await receiver.getAddress())).to.equal(beforeBalance)
     })
 
     it("should create a lock if the caller is approved by the receiver.", async () => {
         await lockDealNFT.connect(receiver).setApprovalForAll(await caller.getAddress(), true)
-        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
-        const signature = await createSignature(signer, signatureData)
-        await expect(
-            dispenserProvider.dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
-        ).to.not.reverted
+        const signature = await createEIP712Signature(
+            poolId,
+            await receiver.getAddress(),
+            validTime,
+            signer,
+            await dispenserProvider.getAddress(),
+            usersData
+        )
+        await expect(dispenserProvider.dispenseLock(signatureData, signature)).to.not.reverted
         await lockDealNFT.connect(receiver).setApprovalForAll(await caller.getAddress(), false)
     })
 
     it("should revert double creation", async () => {
-        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
-        const signature = await createSignature(signer, signatureData)
-        await dispenserProvider
-            .connect(receiver)
-            .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+        const signature = await createEIP712Signature(
+            poolId,
+            await receiver.getAddress(),
+            validTime,
+            signer,
+            await dispenserProvider.getAddress(),
+            usersData
+        )
+        await dispenserProvider.connect(receiver).dispenseLock(signatureData, signature)
         await expect(
-            dispenserProvider
-                .connect(receiver)
-                .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+            dispenserProvider.connect(receiver).dispenseLock(signatureData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "TokensAlreadyTaken")
     })
 
@@ -142,12 +170,16 @@ describe("Dispenser Provider tests", function () {
     })
 
     it("should revert authorization if the caller is neither the owner, the receiver, nor approved by the receiver", async () => {
-        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
-        const signature = await createSignature(signer, signatureData)
+        const signature = await createEIP712Signature(
+            poolId,
+            await receiver.getAddress(),
+            validTime,
+            signer,
+            await dispenserProvider.getAddress(),
+            usersData
+        )
         await expect(
-            dispenserProvider
-                .connect(caller)
-                .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+            dispenserProvider.connect(caller).dispenseLock(signatureData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "CallerNotApproved")
     })
 
@@ -166,25 +198,30 @@ describe("Dispenser Provider tests", function () {
     })
 
     it("should emit PoolCreated event", async () => {
-        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
-        const signature = await createSignature(signer, signatureData)
-        await expect(
-            dispenserProvider
-                .connect(receiver)
-                .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+        const signature = await createEIP712Signature(
+            poolId,
+            await receiver.getAddress(),
+            validTime,
+            signer,
+            await dispenserProvider.getAddress(),
+            usersData
         )
+        await expect(dispenserProvider.connect(receiver).dispenseLock(signatureData, signature))
             .to.emit(dispenserProvider, "PoolCreated")
             .withArgs(poolId + 1n, await lockProvider.getAddress())
     })
 
     it("should emit TokensDispensed event", async () => {
-        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
-        const signature = await createSignature(signer, signatureData)
-        await expect(
-            dispenserProvider
-                .connect(receiver)
-                .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+        const signature = await createEIP712Signature(
+            poolId,
+            await receiver.getAddress(),
+            validTime,
+            signer,
+            await dispenserProvider.getAddress(),
+            usersData
         )
+
+        await expect(dispenserProvider.connect(receiver).dispenseLock(signatureData, signature))
             .to.emit(dispenserProvider, "TokensDispensed")
             .withArgs(poolId, await receiver.getAddress(), amount / 2n, amount / 2n)
     })
@@ -194,40 +231,54 @@ describe("Dispenser Provider tests", function () {
     })
 
     it("should support IDispenserProvider interface", async () => {
-        expect(await dispenserProvider.supportsInterface("0xda28ff53")).to.equal(true)
+        expect(await dispenserProvider.supportsInterface("0xeb10b6f5")).to.equal(true)
     })
 
     it("should revert if params amount greater than leftAmount", async () => {
         userData = { simpleProvider: await lockProvider.getAddress(), params: [amount, validTime] }
         const usersData = [userData, userData]
-        const signatureData = [poolId, validTime, await receiver.getAddress(), userData, userData]
-        const signature = await createSignature(signer, signatureData)
+        signatureData.data = usersData
+        const signature = await createEIP712Signature(
+            poolId,
+            await receiver.getAddress(),
+            validTime,
+            signer,
+            await dispenserProvider.getAddress(),
+            usersData
+        )
         await expect(
-            dispenserProvider
-                .connect(receiver)
-                .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+            dispenserProvider.connect(receiver).dispenseLock(signatureData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "NotEnoughTokensInPool")
     })
 
     it("should revert zero params amount", async () => {
         const invalidUserData = { simpleProvider: await lockProvider.getAddress(), params: [0, validTime] }
         const usersData = [userData, invalidUserData]
-        const signatureData = [poolId, validTime, await receiver.getAddress(), userData, invalidUserData]
-        const signature = await createSignature(signer, signatureData)
+        signatureData.data = usersData
+        const signature = await createEIP712Signature(
+            poolId,
+            await receiver.getAddress(),
+            validTime,
+            signer,
+            await dispenserProvider.getAddress(),
+            usersData
+        )
         await expect(
-            dispenserProvider
-                .connect(receiver)
-                .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+            dispenserProvider.connect(receiver).dispenseLock(signatureData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "AmountMustBeGreaterThanZero")
     })
 
     it("should allow the pool owner to call dispense for the receiver", async () => {
-        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
-        const signature = await createSignature(signer, signatureData)
+        const signature = await createEIP712Signature(
+            poolId,
+            await receiver.getAddress(),
+            validTime,
+            signer,
+            await dispenserProvider.getAddress(),
+            usersData
+        )
         const balanceBefore = await lockDealNFT["balanceOf(address)"](await receiver.getAddress())
-        await dispenserProvider
-            .connect(signer)
-            .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+        await dispenserProvider.connect(signer).dispenseLock(signatureData, signature)
         const balanceAfter = await lockDealNFT["balanceOf(address)"](await receiver.getAddress())
         expect(balanceAfter).to.equal(balanceBefore + 1n)
     })
@@ -235,12 +286,17 @@ describe("Dispenser Provider tests", function () {
     it("should revert if the parameters length is zero", async () => {
         const userData = { simpleProvider: await lockProvider.getAddress(), params: [] }
         const usersData = [userData]
-        const signatureData = [poolId, validTime, await receiver.getAddress(), userData]
-        const signature = await createSignature(signer, signatureData)
+        signatureData.data = usersData
+        const signature = await createEIP712Signature(
+            poolId,
+            await receiver.getAddress(),
+            validTime,
+            signer,
+            await dispenserProvider.getAddress(),
+            usersData
+        )
         await expect(
-            dispenserProvider
-                .connect(receiver)
-                .dispenseLock(poolId, validTime, await receiver.getAddress(), usersData, signature)
+            dispenserProvider.connect(receiver).dispenseLock(signatureData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "ZeroParamsLength")
     })
 })
