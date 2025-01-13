@@ -12,9 +12,6 @@ import "./DispenserState.sol";
 abstract contract DispenserInternal is DispenserState, EIP712 {
     using ECDSA for bytes32;
 
-    bytes32 private BUILDER_TYPEHASH =
-        keccak256("Builder(address simpleProvider,uint256[] params)");
-
     modifier notZeroValue(uint256 value) {
         if (value == 0) revert AmountMustBeGreaterThanZero();
         _;

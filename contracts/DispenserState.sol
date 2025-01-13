@@ -18,6 +18,6 @@ abstract contract DispenserState is IDispenserProvider, DealProvider {
             "SigStruct(Builder[] data,uint256 poolId,address receiver,uint256 validUntil)Builder(address simpleProvider,uint256[] params)"
         );
 
-    bytes32 private BUILDER_TYPEHASH =
+    bytes32 BUILDER_TYPEHASH =
         keccak256("Builder(address simpleProvider,uint256[] params)");
 }
