@@ -34,31 +34,24 @@ abstract contract DispenserModifiers is DispenserInternal {
 
     /// @notice Validates the signature provided for the dispense action.
     /// @dev Reverts with an `InvalidSignature` error if the signature is not valid.
-    /// @param poolId The pool ID for the dispensation.
-    /// @param validUntil The timestamp until which the dispensation is valid.
-    /// @param receiver The address of the receiver of the dispensation.
-    /// @param data The data associated with the dispensation.
-    /// @param signature The cryptographic signature to verify.
     modifier isValidSignature(
-        uint256 poolId,
-        uint256 validUntil,
-        address receiver,
-        Builder[] calldata data,
+        MessageStruct calldata message,
         bytes calldata signature
     ) {
         if (
             !_checkData(
-                poolId,
+                message.poolId,
                 abi.encodePacked(
-                    poolId,
-                    validUntil,
-                    receiver,
-                    _encodeBuilder(data)
+                    MESSAGE_TYPEHASH,
+                    keccak256(abi.encodePacked(_encodeBuilder(message.data))),
+                    message.poolId,
+                    abi.encode(message.receiver),
+                    message.validUntil
                 ),
                 signature
             )
         ) {
-            revert InvalidSignature(poolId, receiver);
+            revert InvalidSignature(message.poolId, message.receiver);
         }
         _;
     }

@@ -2,16 +2,15 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "./DispenserState.sol";
 
 /// @title DispenserInternal
 /// @dev Abstract contract that implements the logic for handling token dispensing and NFT management.
 ///      This contract is responsible for encoding builder data, handling simple NFTs, and ensuring the correct
 ///      amount of tokens are dispensed from the pool.
-abstract contract DispenserInternal is DispenserState {
+abstract contract DispenserInternal is DispenserState, EIP712 {
     using ECDSA for bytes32;
-    using MessageHashUtils for bytes32;
 
     modifier notZeroValue(uint256 value) {
         if (value == 0) revert AmountMustBeGreaterThanZero();
@@ -20,21 +19,21 @@ abstract contract DispenserInternal is DispenserState {
 
     /// @notice Encodes an array of Builder structs into a single byte array.
     /// @param builder An array of Builder structs to be encoded.
-    /// @return data The encoded byte array representing the Builders.
+    /// @return builderData An array of bytes32 values representing the encoded builders.
     function _encodeBuilder(
         Builder[] calldata builder
-    ) internal pure returns (bytes memory data) {
+    ) internal view returns (bytes32[] memory builderData) {
+        builderData = new bytes32[](builder.length);
         for (uint256 i = 0; i < builder.length; ++i) {
-            data = _encodeBuilder(builder[i], data);
+            builderData[i] = _encodeBuilder(builder[i]);
         }
     }
 
     /// @notice Encodes a single Builder struct into a byte array.
     /// @param builder A single Builder struct to be encoded.
-    /// @param data The byte array to which the encoded builder will be appended.
     /// @return The updated byte array after encoding the builder.
-    function _encodeBuilder(Builder calldata builder, bytes memory data) internal pure returns(bytes memory) {
-        return abi.encodePacked(data, address(builder.simpleProvider), builder.params);
+    function _encodeBuilder(Builder calldata builder) internal view returns(bytes32) {
+        return keccak256(abi.encode(BUILDER_TYPEHASH, builder.simpleProvider, keccak256(abi.encodePacked(builder.params))));
     }
 
     /// @notice Handles the dispensation of simple NFTs from a token pool.
@@ -132,6 +131,8 @@ abstract contract DispenserInternal is DispenserState {
         bytes memory data,
         bytes calldata signature
     ) internal view returns (bool) {
-        return keccak256(data).toEthSignedMessageHash().recover(signature) == lockDealNFT.getData(poolId).owner;
+        bytes32 hash = _hashTypedDataV4(keccak256(data));
+        address signer = ECDSA.recover(hash, signature);
+        return signer == lockDealNFT.getData(poolId).owner;
     }
 }
