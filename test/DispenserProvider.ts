@@ -8,7 +8,7 @@ import { TimedDealProvider } from "../typechain-types/@poolzfinance/lockdeal-nft
 import { IDispenserProvider } from "../typechain-types/contracts/DispenserProvider"
 import { time } from "@nomicfoundation/hardhat-network-helpers"
 import { expect } from "chai"
-import { createSignature, createEIP712Signature } from "./helper"
+import { createEIP712Signature } from "./helper"
 import { ethers } from "hardhat"
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers"
 
@@ -32,7 +32,7 @@ describe("Dispenser Provider tests", function () {
     const creationSignature: Uint8Array = ethers.toUtf8Bytes("signature")
     const amount = ethers.parseUnits("10", 18)
     const ONE_DAY = 86400
-    let signatureData: IDispenserProvider.SigStructStruct
+    let signatureData: IDispenserProvider.MessageStructStruct
 
     before(async () => {
         [caller, receiver, signer] = await ethers.getSigners()
