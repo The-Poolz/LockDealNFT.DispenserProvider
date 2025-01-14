@@ -22,6 +22,8 @@ contract DispenserProvider is DispenserModifiers {
     /// The signature provided is unique and can be used only once
     /// @dev Validates the caller's approval, the signature, the availability of tokens, and the lock time before dispensing.
     ///      If successful, it dispenses the tokens and emits an event.
+    /// @param message The message struct containing the pool ID, receiver address, data, and validUntil timestamp.
+    /// @param signature The signature provided by the pool owner to validate the message.
     function dispenseLock(
         MessageStruct calldata message,
         bytes calldata signature
