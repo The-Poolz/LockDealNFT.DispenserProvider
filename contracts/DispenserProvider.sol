@@ -34,8 +34,8 @@ contract DispenserProvider is DispenserModifiers {
         isUnclaimed(message.poolId, message.receiver)
         isValidSignature(message, signature)
     {
-        uint256 amountTaken = _handleSimpleNFTs(message.poolId, message.receiver, message.data);
-        _finalizeDeal(message.poolId, message.receiver, amountTaken);
+        uint256 amountTaken = _handleSimpleNFTs(message);
+        _finalizeDeal(message, amountTaken);
 
         emit TokensDispensed(
             message.poolId,
