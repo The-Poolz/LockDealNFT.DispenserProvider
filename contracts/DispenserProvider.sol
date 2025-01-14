@@ -28,10 +28,7 @@ contract DispenserProvider is DispenserModifiers {
     )
         external
         firewallProtected
-        validProviderId(message.poolId)
-        isAuthorized(message.poolId, message.receiver)
-        isValidTime(message.validUntil)
-        isUnclaimed(message.poolId, message.receiver)
+        validateDispense(message)
         isValidSignature(message, signature)
     {
         uint256 amountTaken = _handleSimpleNFTs(message.poolId, message.receiver, message.data);
