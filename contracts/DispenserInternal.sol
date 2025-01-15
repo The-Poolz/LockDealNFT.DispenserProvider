@@ -40,10 +40,10 @@ abstract contract DispenserInternal is DispenserState, EIP712 {
     /// @dev Iterates through all Builders, dispensing the NFTs and finalizing the deal.
     /// @param message The MessageStruct containing the data for the transaction.
     /// @return amountTaken The total amount of tokens dispensed from the pool.
-    /// `0x32aa97c4` - represent the bytes4(keccak256("_handleSimpleNFTs(uint256,address,(address,uint256[])[])"))
+    /// `0xeb0e956e` - represent the bytes4(keccak256("_handleSimpleNFTs(uint256,address,uint256,(address,uint256[])[])"))
     function _handleSimpleNFTs(
         MessageStruct calldata message
-    ) internal firewallProtectedSig(0x32aa97c4) returns (uint256 amountTaken) {
+    ) internal firewallProtectedSig(0xeb0e956e) returns (uint256 amountTaken) {
         Builder[] calldata builder = message.data;
         for (uint256 i = 0; i < builder.length; ++i) {
             if (builder[i].params.length == 0) revert ZeroParamsLength();
@@ -74,11 +74,11 @@ abstract contract DispenserInternal is DispenserState, EIP712 {
     /// @dev Updates the pool amount and marks the transaction as completed for the owner.
     /// @param message The MessageStruct containing the data for the transaction.
     /// @param amountTaken The total amount of tokens dispensed from the pool.
-    /// `0x52f83cd6` - represent the bytes4(keccak256("_finalizeDeal(uint256,address,uint256)"))
+    /// `0x9c572d50` - represent the bytes4(keccak256("_finalizeDeal((uint256,address,uint256,(address,uint256[])[]),uint256)"))
     function _finalizeDeal(
         MessageStruct calldata message,
         uint256 amountTaken
-    ) internal firewallProtectedSig(0x52f83cd6) {
+    ) internal firewallProtectedSig(0x9c572d50) {
         if (amountTaken > poolIdToAmount[message.poolId]) {
             revert NotEnoughTokensInPool(amountTaken, poolIdToAmount[message.poolId]);
         }
