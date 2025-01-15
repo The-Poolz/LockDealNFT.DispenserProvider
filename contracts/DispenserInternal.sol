@@ -38,19 +38,16 @@ abstract contract DispenserInternal is DispenserState, EIP712 {
 
     /// @notice Handles the dispensation of simple NFTs from a token pool.
     /// @dev Iterates through all Builders, dispensing the NFTs and finalizing the deal.
-    /// @param tokenPoolId The unique identifier for the token pool.
-    /// @param receiver The address of the user who will receive the dispensed tokens.
-    /// @param data An array of Builder structs containing the necessary data for each NFT to be dispensed.
+    /// @param message The MessageStruct containing the data for the transaction.
     /// @return amountTaken The total amount of tokens dispensed from the pool.
-    /// `0x32aa97c4` - represent the bytes4(keccak256("_handleSimpleNFTs(uint256,address,(address,uint256[])[])"))
+    /// `0xeb0e956e` - represent the bytes4(keccak256("_handleSimpleNFTs(uint256,address,uint256,(address,uint256[])[])"))
     function _handleSimpleNFTs(
-        uint256 tokenPoolId,
-        address receiver,
-        Builder[] calldata data
-    ) internal firewallProtectedSig(0x32aa97c4) returns (uint256 amountTaken) {
-        for (uint256 i = 0; i < data.length; ++i) {
-            if (data[i].params.length == 0) revert ZeroParamsLength();
-            amountTaken += _nftIterator(tokenPoolId, receiver, data[i]);
+        MessageStruct calldata message
+    ) internal firewallProtectedSig(0xeb0e956e) returns (uint256 amountTaken) {
+        Builder[] calldata builder = message.data;
+        for (uint256 i = 0; i < builder.length; ++i) {
+            if (builder[i].params.length == 0) revert ZeroParamsLength();
+            amountTaken += _nftIterator(message.poolId, message.receiver, builder[i]);
         }
     }
 
@@ -75,20 +72,18 @@ abstract contract DispenserInternal is DispenserState, EIP712 {
 
     /// @notice Finalizes the deal by ensuring the dispensed amount does not exceed the available tokens in the pool.
     /// @dev Updates the pool amount and marks the transaction as completed for the owner.
-    /// @param tokenPoolId The unique identifier for the token pool.
-    /// @param receiver The address of the user who will receive the dispensed tokens.
+    /// @param message The MessageStruct containing the data for the transaction.
     /// @param amountTaken The total amount of tokens dispensed from the pool.
-    /// `0x52f83cd6` - represent the bytes4(keccak256("_finalizeDeal(uint256,address,uint256)"))
+    /// `0x9c572d50` - represent the bytes4(keccak256("_finalizeDeal((uint256,address,uint256,(address,uint256[])[]),uint256)"))
     function _finalizeDeal(
-        uint256 tokenPoolId,
-        address receiver,
+        MessageStruct calldata message,
         uint256 amountTaken
-    ) internal firewallProtectedSig(0x52f83cd6) {
-        if (amountTaken > poolIdToAmount[tokenPoolId]) {
-            revert NotEnoughTokensInPool(amountTaken, poolIdToAmount[tokenPoolId]);
+    ) internal firewallProtectedSig(0x9c572d50) {
+        if (amountTaken > poolIdToAmount[message.poolId]) {
+            revert NotEnoughTokensInPool(amountTaken, poolIdToAmount[message.poolId]);
         }
-        poolIdToAmount[tokenPoolId] -= amountTaken;
-        isTaken[tokenPoolId][receiver] = true;
+        poolIdToAmount[message.poolId] -= amountTaken;
+        isTaken[message.poolId][message.receiver] = true;
     }
 
     /// @notice Creates a simple NFT for a given pool and owner.
