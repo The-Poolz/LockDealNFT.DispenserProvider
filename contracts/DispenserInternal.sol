@@ -44,9 +44,10 @@ abstract contract DispenserInternal is DispenserState, EIP712 {
     function _handleSimpleNFTs(
         MessageStruct calldata message
     ) internal firewallProtectedSig(0x32aa97c4) returns (uint256 amountTaken) {
-        for (uint256 i = 0; i < message.data.length; ++i) {
-            if (message.data[i].params.length == 0) revert ZeroParamsLength();
-            amountTaken += _nftIterator(message.poolId, message.receiver, message.data[i]);
+        Builder[] calldata builder = message.data;
+        for (uint256 i = 0; i < builder.length; ++i) {
+            if (builder[i].params.length == 0) revert ZeroParamsLength();
+            amountTaken += _nftIterator(message.poolId, message.receiver, builder[i]);
         }
     }
 
