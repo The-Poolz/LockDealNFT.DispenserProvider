@@ -1,7 +1,8 @@
 import { ethers } from "hardhat"
 
 async function deploy() {
-    const lockDealNFT = "0xe42876a77108E8B3B2af53907f5e533Cba2Ce7BE"
+    // testnet LockDealNFT address - 0xe42876a77108E8B3B2af53907f5e533Cba2Ce7BE
+    const lockDealNFT = ""
     const DispenserProvider = await ethers.getContractFactory("DispenserProvider")
     const dispenserProvider = await DispenserProvider.deploy(lockDealNFT)
 
