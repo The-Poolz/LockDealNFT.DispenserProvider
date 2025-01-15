@@ -43,10 +43,10 @@ abstract contract DispenserModifiers is DispenserInternal {
                 message.poolId,
                 abi.encodePacked(
                     MESSAGE_TYPEHASH,
-                    keccak256(abi.encodePacked(_encodeBuilder(message.data))),
                     message.poolId,
                     abi.encode(message.receiver),
-                    message.validUntil
+                    message.validUntil,
+                    keccak256(abi.encodePacked(_encodeBuilder(message.data)))
                 ),
                 signature
             )
