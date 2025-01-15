@@ -22,7 +22,7 @@ abstract contract DispenserInternal is DispenserState, EIP712 {
     /// @return builderData An array of bytes32 values representing the encoded builders.
     function _encodeBuilder(
         Builder[] calldata builder
-    ) internal view returns (bytes32[] memory builderData) {
+    ) internal pure returns (bytes32[] memory builderData) {
         builderData = new bytes32[](builder.length);
         for (uint256 i = 0; i < builder.length; ++i) {
             builderData[i] = _encodeBuilder(builder[i]);
@@ -32,7 +32,7 @@ abstract contract DispenserInternal is DispenserState, EIP712 {
     /// @notice Encodes a single Builder struct into a byte array.
     /// @param builder A single Builder struct to be encoded.
     /// @return The updated byte array after encoding the builder.
-    function _encodeBuilder(Builder calldata builder) internal view returns(bytes32) {
+    function _encodeBuilder(Builder calldata builder) internal pure returns(bytes32) {
         return keccak256(abi.encode(BUILDER_TYPEHASH, builder.simpleProvider, keccak256(abi.encodePacked(builder.params))));
     }
 

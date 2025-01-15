@@ -8,6 +8,7 @@
 **DispenserProvider** contract is part of a system designed to manage and dispense tokens from a pool in response to approved requests. It allows creating token pools and locking tokens for distribution according to predefined conditions
 
 ### Audit report
+
 The audit report is available here: [Audit Report](https://docs.google.com/document/d/1jOZR6fjlFECY7Or9taxpsHXea8OQwgHGA5R3yQumuMQ/edit?tab=t.0)
 
 ### Navigation
@@ -90,7 +91,7 @@ _This picture illustrates the relationships between actors and processes._
 
 ## Contracts diagram
 
-![classDiagram](https://github.com/user-attachments/assets/3b1d1012-7784-4d5d-b6f1-221cfa88868f)
+![classDiagram](https://github.com/user-attachments/assets/69bdad49-51e0-41bd-ab40-a6495cbbd814)
 
 ## Create Dispenser Pool
 
@@ -155,23 +156,19 @@ To call this function, caller must have the pool owner's signature, be the recip
     /// The signature provided is unique and can be used only once
     /// @dev Validates the caller's approval, the signature, the availability of tokens, and the lock time before dispensing.
     ///      If successful, it dispenses the tokens and emits an event.
-    /// @param poolId The unique identifier for the pool from which tokens will be dispensed.
-    /// @param validUntil The timestamp until which the transaction is valid. Must be greater than or equal to the current block time.
-    /// @param receiver The address of the user who will receive the dispensed tokens.
-    /// @param data An array of `Builder` structs containing the necessary data to perform the dispensing.
-    /// @param signature A cryptographic signature validating the request from the specified owner.
+    /// @param message The message struct containing the pool ID, receiver address, data, and validUntil timestamp.
+    /// @param signature The signature provided by the pool owner to validate the message.
     function dispenseLock(
-        uint256 poolId,
-        uint256 validUntil,
-        address receiver,
-        Builder[] calldata data,
+        MessageStruct calldata message,
         bytes calldata signature
     )
 ```
 
+**EIP-712 JSON** signature format: https://github.com/The-Poolz/LockDealNFT.DispenserProvider/issues/60#issuecomment-2582469583
+
 **Testnet example call:** [BSC Testnet Transaction](https://testnet.bscscan.com/tx/0x86869217eff90469297574324c0153f3786500ee064e469fd896c3387d3ac7cd)
 
-**Function selector:** `0xda28ff53`
+**Function selector:** `0xad43114e`
 
 ### TypeScript Example
 
@@ -189,32 +186,57 @@ let userData: IDispenserProvider.BuilderStruct = {
     params: [amount / 2n, validTime],
 }
 let usersData: IDispenserProvider.BuilderStruct[] = [userData]
-const signatureData = [poolId, validTime, await user.getAddress(), userData]
-const signature = await createSignature(signer, signatureData)
-await dispenserProvider.dispenseLock(poolId, validTime, await user.getAddress(), usersData, signature)
+const signatureData: IDispenserProvider.MessageStructStruct = {
+    poolId: poolId,
+    receiver: await receiver.getAddress(),
+    validUntil: validTime,
+    data: usersData,
+}
+const signature = await createEIP712Signature(
+    poolId,
+    await receiver.getAddress(),
+    validTime,
+    signer,
+    await dispenserProvider.getAddress(),
+    usersData
+)
+await dispenserProvider.dispenseLock(signatureData, signature)
 
-async function createSignature(signer: SignerWithAddress, data: any[]): Promise<string> {
-    const types: string[] = []
-    const values: any[] = []
-    for (const element of data) {
-        if (typeof element === "string") {
-            types.push("address")
-            values.push(element)
-        } else if (typeof element === "object" && Array.isArray(element)) {
-            types.push("uint256[]")
-            values.push(element)
-        } else if (typeof element === "number" || typeof element === "bigint") {
-            types.push("uint256")
-            values.push(element)
-        } else if (typeof element === "object" && !Array.isArray(element)) {
-            types.push("address")
-            values.push(element.simpleProvider)
-            types.push("uint256[]")
-            values.push(element.params)
-        }
+async function createEIP712Signature(
+    poolId: bigint,
+    receiver: string,
+    validUntil: number,
+    signer: SignerWithAddress,
+    contractAddress: string,
+    data: IDispenserProvider.BuilderStruct[]
+): Promise<string> {
+    const domain = {
+        name: "DispenserProvider",
+        version: "1",
+        chainId: (await ethers.provider.getNetwork()).chainId,
+        verifyingContract: contractAddress,
     }
-    const packedData = ethers.solidityPackedKeccak256(types, values)
-    return signer.signMessage(ethers.getBytes(packedData))
+    const types = {
+        Builder: [
+            { name: "simpleProvider", type: "address" },
+            { name: "params", type: "uint256[]" },
+        ],
+        MessageStruct: [
+            { name: "poolId", type: "uint256" },
+            { name: "receiver", type: "address" },
+            { name: "validUntil", type: "uint256" },
+            { name: "data", type: "Builder[]" },
+        ],
+    }
+    const value = {
+        data: data,
+        poolId: poolId.toString(),
+        receiver: receiver,
+        validUntil: validUntil,
+    }
+
+    // Use signTypedData to create the signature
+    return await signer.signTypedData(domain, types, value)
 }
 ```
 

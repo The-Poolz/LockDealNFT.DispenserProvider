@@ -15,10 +15,10 @@ interface IDispenserProvider is ISimpleProvider {
         uint256[] params;
     }
     struct MessageStruct {
-        Builder[] data;
         uint256 poolId;
         address receiver;
         uint256 validUntil;
+        Builder[] data;
     }
 
     function dispenseLock(

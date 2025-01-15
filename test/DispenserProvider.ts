@@ -66,10 +66,10 @@ describe("Dispenser Provider tests", function () {
         userData = { simpleProvider: await lockProvider.getAddress(), params: [amount / 2n, validTime] }
         usersData = [userData]
         signatureData = {
-            data: usersData,
             poolId: poolId,
             receiver: await receiver.getAddress(),
             validUntil: validTime,
+            data: usersData
         }
     })
 
@@ -231,7 +231,7 @@ describe("Dispenser Provider tests", function () {
     })
 
     it("should support IDispenserProvider interface", async () => {
-        expect(await dispenserProvider.supportsInterface("0xeb10b6f5")).to.equal(true)
+        expect(await dispenserProvider.supportsInterface("0xaddfd400")).to.equal(true)
     })
 
     it("should revert if params amount greater than leftAmount", async () => {
