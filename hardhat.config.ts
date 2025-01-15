@@ -8,6 +8,8 @@ import "@nomicfoundation/hardhat-ethers"
 import "@nomicfoundation/hardhat-chai-matchers"
 import "@truffle/dashboard-hardhat-plugin"
 
+require("dotenv").config()
+
 const config: HardhatUserConfig = {
     defaultNetwork: "hardhat",
     solidity: {

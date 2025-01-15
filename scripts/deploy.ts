@@ -1,8 +1,13 @@
 import { ethers } from "hardhat"
 
 async function deploy() {
-    // testnet LockDealNFT address - 0xe42876a77108E8B3B2af53907f5e533Cba2Ce7BE
-    const lockDealNFT = ""
+    // Fetch the LockDealNFT address from environment variables
+    const lockDealNFT = process.env.LOCK_DEAL_NFT_ADDRESS
+    console.log(lockDealNFT)
+    if (!lockDealNFT) {
+        throw new Error("LockDealNFT address is not set in the environment variables.")
+    }
+
     const DispenserProvider = await ethers.getContractFactory("DispenserProvider")
     const dispenserProvider = await DispenserProvider.deploy(lockDealNFT)
 
