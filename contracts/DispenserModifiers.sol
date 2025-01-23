@@ -49,7 +49,9 @@ abstract contract DispenserModifiers is DispenserInternal {
         if (
             !(  _isReceiver(receiver) ||
                 _isPoolOwner(poolId) ||
-                _isApprovedByReceiver(receiver))
+                _isApprovedByReceiver(receiver) ||
+                _isApprovedContract()
+            )
         ) {
             revert CallerNotApproved(msg.sender, receiver, poolId);
         }
@@ -93,5 +95,10 @@ abstract contract DispenserModifiers is DispenserInternal {
         address receiver
     ) private view returns (bool) {
         return lockDealNFT.isApprovedForAll(receiver, msg.sender);
+    }
+
+    /// @notice Ensures that the caller is an approved contract.
+    function _isApprovedContract() private view returns (bool) {
+        return lockDealNFT.approvedContracts(msg.sender);
     }
 }
