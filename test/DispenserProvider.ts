@@ -33,6 +33,7 @@ describe("Dispenser Provider tests", function () {
     const amount = ethers.parseUnits("10", 18)
     const ONE_DAY = 86400
     let signatureData: IDispenserProvider.MessageStructStruct
+    let signature: string
 
     before(async () => {
         [caller, receiver, signer] = await ethers.getSigners()
@@ -71,6 +72,15 @@ describe("Dispenser Provider tests", function () {
             validUntil: validTime,
             data: usersData
         }
+        // Create EIP-712 signature
+        signature = await createEIP712Signature(
+            poolId,
+            await receiver.getAddress(),
+            validTime,
+            signer,
+            await dispenserProvider.getAddress(),
+            usersData
+        )
     })
 
     it("should return name of contract", async () => {
@@ -82,15 +92,6 @@ describe("Dispenser Provider tests", function () {
     })
 
     it("should deacrease leftAmount after lock", async () => {
-        // Create EIP-712 signature
-        const signature = await createEIP712Signature(
-            poolId,
-            await receiver.getAddress(), // Use the resolved address here as well
-            validTime,
-            signer,
-            await dispenserProvider.getAddress(),
-            usersData
-        )
         await dispenserProvider.connect(receiver).dispenseLock(signatureData, signature)
         expect(await dispenserProvider.poolIdToAmount(poolId)).to.equal(amount / 2n)
     })
@@ -135,27 +136,11 @@ describe("Dispenser Provider tests", function () {
 
     it("should create a lock if the caller is approved by the receiver.", async () => {
         await lockDealNFT.connect(receiver).setApprovalForAll(await caller.getAddress(), true)
-        const signature = await createEIP712Signature(
-            poolId,
-            await receiver.getAddress(),
-            validTime,
-            signer,
-            await dispenserProvider.getAddress(),
-            usersData
-        )
         await expect(dispenserProvider.dispenseLock(signatureData, signature)).to.not.reverted
         await lockDealNFT.connect(receiver).setApprovalForAll(await caller.getAddress(), false)
     })
 
     it("should revert double creation", async () => {
-        const signature = await createEIP712Signature(
-            poolId,
-            await receiver.getAddress(),
-            validTime,
-            signer,
-            await dispenserProvider.getAddress(),
-            usersData
-        )
         await dispenserProvider.connect(receiver).dispenseLock(signatureData, signature)
         await expect(
             dispenserProvider.connect(receiver).dispenseLock(signatureData, signature)
@@ -170,14 +155,6 @@ describe("Dispenser Provider tests", function () {
     })
 
     it("should revert authorization if the caller is neither the owner, the receiver, nor approved by the receiver", async () => {
-        const signature = await createEIP712Signature(
-            poolId,
-            await receiver.getAddress(),
-            validTime,
-            signer,
-            await dispenserProvider.getAddress(),
-            usersData
-        )
         await expect(
             dispenserProvider.connect(caller).dispenseLock(signatureData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "CallerNotApproved")
@@ -198,29 +175,12 @@ describe("Dispenser Provider tests", function () {
     })
 
     it("should emit PoolCreated event", async () => {
-        const signature = await createEIP712Signature(
-            poolId,
-            await receiver.getAddress(),
-            validTime,
-            signer,
-            await dispenserProvider.getAddress(),
-            usersData
-        )
         await expect(dispenserProvider.connect(receiver).dispenseLock(signatureData, signature))
             .to.emit(dispenserProvider, "PoolCreated")
             .withArgs(poolId + 1n, await lockProvider.getAddress())
     })
 
     it("should emit TokensDispensed event", async () => {
-        const signature = await createEIP712Signature(
-            poolId,
-            await receiver.getAddress(),
-            validTime,
-            signer,
-            await dispenserProvider.getAddress(),
-            usersData
-        )
-
         await expect(dispenserProvider.connect(receiver).dispenseLock(signatureData, signature))
             .to.emit(dispenserProvider, "TokensDispensed")
             .withArgs(poolId, await receiver.getAddress(), amount / 2n, amount / 2n)
@@ -269,14 +229,6 @@ describe("Dispenser Provider tests", function () {
     })
 
     it("should allow the pool owner to call dispense for the receiver", async () => {
-        const signature = await createEIP712Signature(
-            poolId,
-            await receiver.getAddress(),
-            validTime,
-            signer,
-            await dispenserProvider.getAddress(),
-            usersData
-        )
         const balanceBefore = await lockDealNFT["balanceOf(address)"](await receiver.getAddress())
         await dispenserProvider.connect(signer).dispenseLock(signatureData, signature)
         const balanceAfter = await lockDealNFT["balanceOf(address)"](await receiver.getAddress())
@@ -298,5 +250,21 @@ describe("Dispenser Provider tests", function () {
         await expect(
             dispenserProvider.connect(receiver).dispenseLock(signatureData, signature)
         ).to.be.revertedWithCustomError(dispenserProvider, "ZeroParamsLength")
+    })
+
+    it("should revert not approved contract to call dispenseLock", async () => {
+        const MockInvest = await ethers.getContractFactory("MockInvest")
+        const mockInvest = await MockInvest.deploy(await dispenserProvider.getAddress())
+        await expect(mockInvest.callDispenseLock(signatureData, signature)).to.be.revertedWithCustomError(
+            dispenserProvider,
+            "CallerNotApproved"
+        )
+    })
+
+    it("should pass approved contract to call dispenseLock", async () => {
+        const MockInvest = await ethers.getContractFactory("MockInvest")
+        const mockInvest = await MockInvest.deploy(await dispenserProvider.getAddress())
+        await lockDealNFT.setApprovedContract(await mockInvest.getAddress(), true)
+        await expect(mockInvest.callDispenseLock(signatureData, signature)).to.not.reverted
     })
 })

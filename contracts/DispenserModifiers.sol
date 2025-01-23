@@ -49,8 +49,9 @@ abstract contract DispenserModifiers is DispenserInternal {
         if (
             !(  _isReceiver(receiver) ||
                 _isPoolOwner(poolId) ||
-                _isApprovedByReceiver(receiver)) ||
+                _isApprovedByReceiver(receiver) ||
                 _isApprovedContract()
+            )
         ) {
             revert CallerNotApproved(msg.sender, receiver, poolId);
         }
