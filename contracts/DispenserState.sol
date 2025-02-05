@@ -15,9 +15,9 @@ abstract contract DispenserState is IDispenserProvider, DealProvider {
 
     /// @notice Hash of the message type for the EIP712 signature. Represented as:
     // keccak256(
-    //     "MessageStruct(uint256 poolId,address receiver,uint256 validUntil,Builder[] data)Builder(address simpleProvider,uint256[] params)"
+    //     "MessageStruct(Builder[] data,uint256 poolId,address receiver,uint256 validUntil)Builder(address simpleProvider,uint256[] params)"
     // )
-    bytes32 public constant MESSAGE_TYPEHASH = 0xc2a80ef40562cfc2e32b4a47b86995910d348d24ae413ebd09b6ecfbcf6b4f13;
+    bytes32 public constant MESSAGE_TYPEHASH = 0x1ed893638dd3a77fd536c1b602c7e1d3111ac7199bbbae36b1047344a7f518be;
 
     /// @notice Hash of the builder type for the EIP712 signature. Represented as:
     /// keccak256("Builder(address simpleProvider,uint256[] params)");
