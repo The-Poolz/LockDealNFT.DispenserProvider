@@ -1,6 +1,7 @@
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers"
 import { IDispenserProvider } from "../typechain-types/contracts/DispenserProvider"
 import { ethers } from "hardhat"
+import { TypedDataEncoder } from "ethers"
 
 export async function createSignature(signer: SignerWithAddress, data: any[]): Promise<string> {
     const types: string[] = []
@@ -47,19 +48,28 @@ export async function createEIP712Signature(
             { name: "params", type: "uint256[]" },
         ],
         MessageStruct: [
+            { name: "data", type: "Builder[]" },
             { name: "poolId", type: "uint256" },
             { name: "receiver", type: "address" },
             { name: "validUntil", type: "uint256" },
-            { name: "data", type: "Builder[]" },
         ],
     }
     const value = {
+        data: data,
         poolId: poolId.toString(),
         receiver: receiver,
         validUntil: validUntil,
-        data: data,
     }
-
     // Use signTypedData to create the signature
     return await signer.signTypedData(domain, types, value)
 }
+
+// function returnJSON(domain: any, types: any, value: Record<string, any>): string {
+//     return JSON.stringify(TypedDataEncoder.getPayload(domain, types, value), (_k, v) => {
+//         if (typeof v === "bigint") {
+//             return v.toString()
+//         }
+
+//         return v
+//     })
+// }
